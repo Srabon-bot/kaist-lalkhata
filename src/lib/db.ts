@@ -9,22 +9,27 @@ export interface Confidence {
 }
 
 export interface LedgerEntry {
-  id?: number;
+  id?: number; // local Dexie primary key only — never sent to the server
+  uuid: string; // stable cross-device identity (see PLAN.md sync design)
   type: EntryType;
-  customerId: number | null; // null only for anonymous cash sales
+  customerId: number | null; // local FK — null only for anonymous cash sales
   item: string | null;
   amountTaka: number;
   createdAt: number; // epoch ms
   confidence: Confidence | null; // null for manually-entered rows
   transcript: string | null;
   edited: boolean; // user changed a field on the confirmation card
+  deletedAt: number | null; // soft-delete marker (see rollbackEntry) — a hard
+  // local delete would have nothing left to sync to other devices
 }
 
 export interface Customer {
-  id?: number;
+  id?: number; // local Dexie primary key only — never sent to the server
+  uuid: string; // stable cross-device identity
   name: string; // display form, e.g. "রহিম ভাই"
   normalizedName: string; // lowercase/trimmed, unique index for dedupe
-  balanceTaka: number; // positive = owes the shop (baki)
+  balanceTaka: number; // positive = owes the shop (baki) — local-only cache,
+  // always recomputed from synced entries after a merge, never synced itself
   createdAt: number;
   updatedAt: number;
 }
@@ -50,6 +55,15 @@ class LalKhataDB extends Dexie {
     this.version(2).stores({
       pendingRecordings: "++id, createdAt",
     });
+    // v3 added a local `accounts` table for a device-only auth prototype;
+    // superseded by the server-backed accounts table in db/schema.sql once
+    // auth moved server-side for cross-device login (see PLAN.md) — dropped
+    // here rather than left as dead, unused local state.
+    this.version(4).stores({
+      accounts: null,
+      entries: "++id, &uuid, type, customerId, createdAt",
+      customers: "++id, &uuid, &normalizedName, balanceTaka",
+    });
   }
 }
 
@@ -57,6 +71,13 @@ export const db = new LalKhataDB();
 
 export function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** True for an entry that hasn't been rolled back — every read path that
+ * lists/sums entries for display should filter through this (a soft-deleted
+ * row stays in Dexie only so its tombstone can sync to other devices). */
+export function isLive(entry: LedgerEntry): boolean {
+  return entry.deletedAt == null;
 }
 
 /** Finds a customer by (normalized) name, creating one if it doesn't exist yet. */
@@ -67,6 +88,7 @@ export async function getOrCreateCustomer(rawName: string): Promise<Customer> {
 
   const now = Date.now();
   const id = await db.customers.add({
+    uuid: crypto.randomUUID(),
     name: rawName.trim(),
     normalizedName,
     balanceTaka: 0,
@@ -107,6 +129,7 @@ export async function recordEntry(input: RecordEntryInput): Promise<LedgerEntry>
     }
 
     const entry: LedgerEntry = {
+      uuid: crypto.randomUUID(),
       type: input.type,
       customerId,
       item: input.item,
@@ -115,6 +138,7 @@ export async function recordEntry(input: RecordEntryInput): Promise<LedgerEntry>
       confidence: input.confidence,
       transcript: input.transcript,
       edited: input.edited,
+      deletedAt: null,
     };
     const id = await db.entries.add(entry);
     return { ...entry, id };
@@ -128,6 +152,7 @@ export async function repayBaki(customerId: number, amountTaka: number): Promise
 
   await db.transaction("rw", db.entries, db.customers, async () => {
     await db.entries.add({
+      uuid: crypto.randomUUID(),
       type: "repayment",
       customerId,
       item: null,
@@ -136,6 +161,7 @@ export async function repayBaki(customerId: number, amountTaka: number): Promise
       confidence: null,
       transcript: null,
       edited: false,
+      deletedAt: null,
     });
     await db.customers.update(customerId, {
       balanceTaka: customer.balanceTaka - amountTaka,
@@ -145,13 +171,14 @@ export async function repayBaki(customerId: number, amountTaka: number): Promise
 }
 
 /** Undoes a ledger entry: reverses its effect on the customer's baki balance
- * (if any), then removes it. Used by the History page's "roll back" action —
- * the counterpart to recordEntry/repayBaki, for correcting a mistaken or
- * unwanted entry after the fact rather than only at confirm-time. */
+ * (if any), then soft-deletes it (deletedAt set, row kept) rather than
+ * removing it outright — a hard local delete would have nothing left to
+ * sync as a deletion to this account's other devices. Every read path
+ * filters soft-deleted rows out via isLive(). */
 export async function rollbackEntry(entryId: number): Promise<void> {
   await db.transaction("rw", db.entries, db.customers, async () => {
     const entry = await db.entries.get(entryId);
-    if (!entry) return;
+    if (!entry || !isLive(entry)) return;
 
     if (entry.customerId != null) {
       const customer = await db.customers.get(entry.customerId);
@@ -167,7 +194,7 @@ export async function rollbackEntry(entryId: number): Promise<void> {
       }
     }
 
-    await db.entries.delete(entryId);
+    await db.entries.update(entryId, { deletedAt: Date.now() });
   });
 }
 

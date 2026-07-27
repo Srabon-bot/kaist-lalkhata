@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { animate, stagger } from "animejs";
-import { db, startOfToday, computeTotals } from "../lib/db";
+import { db, startOfToday, computeTotals, isLive } from "../lib/db";
 import { LedgerRow } from "../components/LedgerRow";
 import { EmptyState } from "../components/EmptyState";
 import { AnimatedTaka } from "../components/AnimatedTaka";
@@ -21,7 +21,7 @@ export function KhataPage() {
   const numeralStyle = numeralStyleForLang(lang);
 
   const todayEntries = useLiveQuery(
-    () => db.entries.where("createdAt").aboveOrEqual(startOfToday()).reverse().sortBy("createdAt"),
+    () => db.entries.where("createdAt").aboveOrEqual(startOfToday()).filter(isLive).reverse().sortBy("createdAt"),
     [],
   );
   const customers = useLiveQuery(() => db.customers.toArray(), []);
@@ -77,7 +77,7 @@ export function KhataPage() {
   };
 
   const handleExport = async () => {
-    const all = await db.entries.orderBy("createdAt").toArray();
+    const all = (await db.entries.orderBy("createdAt").toArray()).filter(isLive);
     const allCustomers = await db.customers.toArray();
     const csv = entriesToCsv(
       all,

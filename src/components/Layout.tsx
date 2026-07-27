@@ -9,7 +9,9 @@ import { LangToggle } from "./LangToggle";
 import { HaalKhataRitual } from "./HaalKhataRitual";
 import { EmojiIcon } from "./EmojiIcon";
 import { db, popOldestPendingRecording } from "../lib/db";
-import { ENTERED_KEY, SHOP_NAME_KEY } from "../pages/WelcomePage";
+import { initSync } from "../lib/sync";
+import { logout } from "../lib/api";
+import { ENTERED_KEY, SHOP_NAME_KEY, ACCOUNT_ID_KEY } from "../pages/WelcomePage";
 import { useT } from "../lib/i18n";
 
 export function Layout() {
@@ -45,14 +47,26 @@ export function Layout() {
     };
   }, [recordOpen]);
 
+  // Layout only mounts once a session has entered (RequireEntered in
+  // App.tsx), so this is the right place to wire the connect/close sync
+  // lifecycle described in lib/sync.ts — dispose on unmount (logout below).
+  useEffect(() => initSync(), []);
+
   // The book closes (BookPage's closing animation) before we actually
   // navigate away — see handleClosed.
   const handleLogout = () => setClosing(true);
 
   const handleClosed = () => {
+    // Clears the server session cookie too — best-effort, fire-and-forget
+    // since we're navigating away regardless. The account itself
+    // (email/password hash or Google link, plus the display name) stays in
+    // Postgres so logging back in works like a real "welcome back", not a
+    // fresh signup every time.
+    void logout();
     try {
       localStorage.removeItem(ENTERED_KEY);
       localStorage.removeItem(SHOP_NAME_KEY);
+      localStorage.removeItem(ACCOUNT_ID_KEY);
     } catch {
       /* ignore */
     }

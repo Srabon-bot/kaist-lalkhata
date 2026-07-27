@@ -2,15 +2,18 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { createTimeline, stagger } from "animejs";
 import { AuthModal, type AuthMode } from "../components/AuthModal";
+import { UsernameModal } from "../components/UsernameModal";
 import { KhataBackdrop } from "../components/KhataBackdrop";
 import { CultureStoryCard } from "../components/CultureStoryCard";
 import { GlossaryTerm } from "../components/GlossaryTerm";
 import { LangToggle } from "../components/LangToggle";
 import { EmojiIcon } from "../components/EmojiIcon";
+import { setUsername, type AuthResult } from "../lib/api";
 import { useLang, useT, type DictKey } from "../lib/i18n";
 
 export const ENTERED_KEY = "lal-khata-entered";
 export const SHOP_NAME_KEY = "lal-khata-shop-name";
+export const ACCOUNT_ID_KEY = "lal-khata-account-id";
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -73,18 +76,41 @@ export function WelcomePage() {
   }, []);
 
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  const [pendingAccount, setPendingAccount] = useState<{ id: string; suggestedName?: string } | null>(null);
   const [showStory, setShowStory] = useState(false);
   const t = useT();
   useLang(); // subscribes this component to language changes for re-render
 
-  const enter = (shopName?: string) => {
+  const enter = (shopName: string, accountId: string) => {
     try {
       localStorage.setItem(ENTERED_KEY, "1");
-      if (shopName) localStorage.setItem(SHOP_NAME_KEY, shopName);
+      localStorage.setItem(SHOP_NAME_KEY, shopName);
+      localStorage.setItem(ACCOUNT_ID_KEY, accountId);
     } catch {
       /* ignore */
     }
     navigate("/");
+  };
+
+  // A signup or a first-time Google sign-in needs a username still (no
+  // displayName saved yet); returning login/Google already has one, so it
+  // skips straight into the app — same as a real "welcome back" flow. Either
+  // way, Layout's sync effect pulls this account's ledger down on mount —
+  // this is the moment a second device catches up with the first.
+  const handleAuthenticated = (result: AuthResult) => {
+    setAuthMode(null);
+    if (!result.isNew && result.displayName) {
+      enter(result.displayName, result.accountId);
+      return;
+    }
+    setPendingAccount({ id: result.accountId, suggestedName: result.suggestedName ?? result.displayName ?? undefined });
+  };
+
+  const handleUsernamePicked = async (name: string) => {
+    if (!pendingAccount) return;
+    await setUsername(name);
+    setPendingAccount(null);
+    enter(name, pendingAccount.id);
   };
 
   return (
@@ -204,11 +230,11 @@ export function WelcomePage() {
         </div>
 
         {authMode && (
-          <AuthModal
-            mode={authMode}
-            onClose={() => setAuthMode(null)}
-            onSubmit={(name) => enter(name)}
-          />
+          <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onAuthenticated={handleAuthenticated} />
+        )}
+
+        {pendingAccount && (
+          <UsernameModal initialValue={pendingAccount.suggestedName} onSubmit={handleUsernamePicked} />
         )}
 
         {showStory && <CultureStoryCard onClose={() => setShowStory(false)} />}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link } from "react-router-dom";
-import { db, startOfToday, computeTotals } from "../lib/db";
+import { db, startOfToday, computeTotals, isLive } from "../lib/db";
 import { formatTaka, numeralStyleForLang } from "../lib/numerals";
 import { EmptyState } from "../components/EmptyState";
 import { EmojiIcon } from "../components/EmojiIcon";
@@ -22,11 +22,11 @@ export function SummaryPage() {
   const numeralStyle = numeralStyleForLang(lang);
 
   const todayEntries = useLiveQuery(
-    () => db.entries.where("createdAt").aboveOrEqual(startOfToday()).toArray(),
+    () => db.entries.where("createdAt").aboveOrEqual(startOfToday()).filter(isLive).toArray(),
     [],
   );
   const weekEntries = useLiveQuery(
-    () => db.entries.where("createdAt").aboveOrEqual(Date.now() - SEVEN_DAYS_MS).toArray(),
+    () => db.entries.where("createdAt").aboveOrEqual(Date.now() - SEVEN_DAYS_MS).filter(isLive).toArray(),
     [],
   );
   const topCustomers = useLiveQuery(

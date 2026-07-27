@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { animate } from "animejs";
-import { db, repayBaki } from "../lib/db";
+import { db, repayBaki, isLive } from "../lib/db";
 import { LedgerRow } from "../components/LedgerRow";
 import { EmptyState } from "../components/EmptyState";
 import { AnimatedTaka } from "../components/AnimatedTaka";
@@ -23,7 +23,7 @@ export function CustomerDetailPage() {
 
   const customer = useLiveQuery(() => db.customers.get(customerId), [customerId]);
   const history = useLiveQuery(
-    () => db.entries.where("customerId").equals(customerId).reverse().sortBy("createdAt"),
+    () => db.entries.where("customerId").equals(customerId).filter(isLive).reverse().sortBy("createdAt"),
     [customerId],
   );
 

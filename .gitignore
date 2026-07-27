@@ -31,7 +31,4 @@ dist-ssr
 *.sln
 *.sw?
 
-.vercel
-.env*
-
 tmp_*

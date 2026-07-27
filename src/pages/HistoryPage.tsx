@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, rollbackEntry, startOfThisYear, type LedgerEntry } from "../lib/db";
+import { db, rollbackEntry, startOfThisYear, isLive, type LedgerEntry } from "../lib/db";
 import { formatTaka, numeralStyleForLang } from "../lib/numerals";
 import { EmptyState } from "../components/EmptyState";
 import { useLang, useT, type DictKey } from "../lib/i18n";
@@ -26,7 +26,7 @@ export function HistoryPage() {
   const [rollingBackId, setRollingBackId] = useState<number | null>(null);
 
   const entries = useLiveQuery(
-    () => db.entries.where("createdAt").aboveOrEqual(startOfThisYear()).reverse().sortBy("createdAt"),
+    () => db.entries.where("createdAt").aboveOrEqual(startOfThisYear()).filter(isLive).reverse().sortBy("createdAt"),
     [],
   );
   const customers = useLiveQuery(() => db.customers.toArray(), []);

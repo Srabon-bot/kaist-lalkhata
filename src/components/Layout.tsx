@@ -78,16 +78,19 @@ export function Layout() {
 
       {/* The flipped page — its own section, same size as the main app
           section, sitting in the (previously unused) space immediately to
-          its left. On a phone-width viewport there's no room for it and it
-          simply renders off-screen; on a wider view it appears alongside
-          the main content as a second page of the spread. `bottom: 6rem`
-          (not h-full) matches the root's own pb-24, since h-full on an
-          absolutely positioned box resolves against the padding box
-          (padding included) while <main>'s flex-1 only fills the content
-          box (padding excluded) — using h-full here made this panel taller
-          than the real page by exactly that padding. */}
+          its left. Only meaningful once there's room for a real two-page
+          spread (md+ / "pc or bigger display" per design review) — on a
+          mobile-width viewport it's hidden outright rather than left to
+          render off-screen, so its mount-animation work never runs there
+          and mobile gets the plain content section, full-width, no book
+          chrome eating into it. `bottom: 6rem` (not h-full) matches the
+          root's own pb-24, since h-full on an absolutely positioned box
+          resolves against the padding box (padding included) while
+          <main>'s flex-1 only fills the content box (padding excluded) —
+          using h-full here made this panel taller than the real page by
+          exactly that padding. */}
       <div
-        className="kantha-weave absolute right-full top-0 w-full bg-khata-red-deep p-3"
+        className="kantha-weave absolute right-full top-0 hidden w-full bg-khata-red-deep p-3 md:block"
         style={{ bottom: "6rem" }}
         aria-hidden="true"
       >
@@ -101,9 +104,11 @@ export function Layout() {
           flat shadow line — straddling the seam between the flipped-page
           panel and the main section, always visible (a real binding shows
           whether or not there's anything on the page), so the two
-          separately-positioned sections still read as one physical book. */}
+          separately-positioned sections still read as one physical book.
+          Only makes sense alongside the flipped-page spread above, so it's
+          hidden below md for the same reason. */}
       <div
-        className="pointer-events-none absolute left-0 top-3 z-30 w-7 -translate-x-1/2"
+        className="pointer-events-none absolute left-0 top-3 z-30 hidden w-7 -translate-x-1/2 md:block"
         style={{
           // Matches the book's own visible extent exactly: main's p-3 inset
           // (0.75rem) on top of root's pb-24 (6rem) on the bottom — without
@@ -121,7 +126,14 @@ export function Layout() {
 
       <main className="relative z-10 flex flex-1 flex-col p-3">
         <div className="relative flex flex-1" style={{ perspective: "1400px" }}>
-          <BookCover closing={closing} />
+          {/* The red cover peeking out behind the page is part of the same
+              "open book" illusion as the two panels above — hidden below
+              md so mobile shows just the content card, nothing simulating
+              a physical book around it. Unaffected by BookPage's own
+              layout since it's absolutely positioned within this wrapper. */}
+          <div className="absolute inset-0 hidden md:block">
+            <BookCover closing={closing} />
+          </div>
           <BookPage closing={closing} onClosed={handleClosed}>
             <div className="mb-3 flex items-center justify-end gap-2">
               <LangToggle className="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink/60 shadow-sm" />

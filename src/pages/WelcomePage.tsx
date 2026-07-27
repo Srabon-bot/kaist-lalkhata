@@ -225,10 +225,11 @@ export function WelcomePage() {
                   />
                 </g>
                 <text x="20" y="25" textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--color-page-cream)">
-                  X
+                  6
                 </text>
               </svg>
-              <p className="font-bangla text-xs text-page-cream/60">Made with ♥ by Team Xenomorphic</p>
+              <p className="font-bangla text-xs text-page-cream/60">Made with ♥ by Team 6</p>
+              <p className="font-bangla text-xs text-page-cream/60">U222, U224, U202</p>
             </div>
           </div>
         </div>

@@ -29,7 +29,7 @@ export default defineConfig({
       },
       workbox: {
         // Ledger viewing must work fully offline; only the Gemma call needs network.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,ico,woff2}'],
         navigateFallbackDenylist: [/^\/api\//],
       },
     }),

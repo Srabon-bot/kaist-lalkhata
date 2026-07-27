@@ -35,7 +35,7 @@ export function BottomNav({ onMicClick }: BottomNavProps) {
           type="button"
           onClick={onMicClick}
           aria-label={t("nav.mic")}
-          className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-khata-red text-white shadow-lg ring-4 ring-page-cream active:scale-95"
+          className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-khata-red text-white ring-4 ring-page-cream transition-transform active:scale-95 shadow-[0_10px_22px_-6px_rgba(122,21,18,0.55),0_0_0_6px_rgba(158,42,43,0.14)]"
         >
           <EmojiIcon src="mic.png" size={24} />
         </button>

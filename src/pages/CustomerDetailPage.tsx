@@ -7,12 +7,14 @@ import { LedgerRow } from "../components/LedgerRow";
 import { EmptyState } from "../components/EmptyState";
 import { AnimatedTaka } from "../components/AnimatedTaka";
 import { useSettings } from "../hooks/useSettings";
+import { useT } from "../lib/i18n";
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 export function CustomerDetailPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const customerId = Number(id);
   const navigate = useNavigate();
@@ -60,14 +62,14 @@ export function CustomerDetailPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <button type="button" onClick={() => navigate(-1)} aria-label="পেছনে যান" className="text-xl text-ink/60">
+        <button type="button" onClick={() => navigate(-1)} aria-label={t("detail.back")} className="text-xl text-ink/60">
           ←
         </button>
         <h1 className="font-bangla text-2xl font-bold text-ink">{customer.name}</h1>
       </div>
 
       <div className="rounded-2xl bg-white p-5 text-center shadow-sm">
-        <p className="font-bangla text-sm text-ink/50">মোট বাকি</p>
+        <p className="font-bangla text-sm text-ink/50">{t("detail.totalBaki")}</p>
         <div className="flex items-center justify-center gap-2">
           <AnimatedTaka
             value={Math.max(0, customer.balanceTaka)}
@@ -102,7 +104,7 @@ export function CustomerDetailPage() {
                 autoFocus
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="কত টাকা"
+                placeholder={t("detail.amountPlaceholder")}
                 className="w-full rounded-lg border border-ink/15 px-3 py-2 text-lg font-bold text-ink"
               />
               <button
@@ -111,7 +113,7 @@ export function CustomerDetailPage() {
                 onClick={handleRepay}
                 className="shrink-0 rounded-full bg-joma-green px-4 py-2 font-bangla font-semibold text-white disabled:opacity-40"
               >
-                নিশ্চিত
+                {t("common.confirm")}
               </button>
             </div>
           ) : (
@@ -120,14 +122,14 @@ export function CustomerDetailPage() {
               onClick={() => setRepaying(true)}
               className="mt-4 rounded-full bg-joma-green px-6 py-2 font-bangla font-semibold text-white"
             >
-              বাকি শোধ
+              {t("detail.repayBaki")}
             </button>
           ))}
       </div>
 
-      <h2 className="font-bangla text-lg font-semibold text-ink">লেনদেনের ইতিহাস</h2>
+      <h2 className="font-bangla text-lg font-semibold text-ink">{t("detail.history")}</h2>
       {!history || history.length === 0 ? (
-        <EmptyState message="এখনো কোনো লেনদেন নেই" />
+        <EmptyState message={t("detail.noHistory")} />
       ) : (
         <ul className="ruled-paper rounded-2xl bg-white shadow-sm">
           {history.map((entry) => (
@@ -137,7 +139,7 @@ export function CustomerDetailPage() {
       )}
 
       <Link to="/customers" className="self-center font-bangla text-sm text-rule-blue underline">
-        সব কাস্টমার দেখুন
+        {t("detail.viewAllCustomers")}
       </Link>
     </div>
   );

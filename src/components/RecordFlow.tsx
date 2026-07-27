@@ -6,6 +6,7 @@ import { ConfirmationCard, type EditedEntry } from "./ConfirmationCard";
 import { extractFromTranscript, GemmaError } from "../lib/gemmaClient";
 import { recordEntry, queuePendingRecording } from "../lib/db";
 import type { ExtractionResult } from "../lib/schema";
+import { useT, type DictKey } from "../lib/i18n";
 
 type Phase = "capture" | "parsing" | "confirm" | "error" | "queued";
 
@@ -16,11 +17,11 @@ interface RecordFlowProps {
   initialTranscript?: string | null;
 }
 
-const ERROR_COPY: Record<GemmaError["kind"], string> = {
-  network: "ইন্টারনেট সংযোগ পরীক্ষা করুন এবং আবার চেষ্টা করুন।",
-  timeout: "উত্তর দিতে বেশি সময় লাগছে। আবার চেষ্টা করুন।",
-  server: "সাময়িক সমস্যা হয়েছে। একটু পর আবার চেষ্টা করুন।",
-  invalid_json: "কথা বোঝা যায়নি — আবার বলুন",
+const ERROR_COPY: Record<GemmaError["kind"], DictKey> = {
+  network: "error.network",
+  timeout: "error.timeout",
+  server: "error.server",
+  invalid_json: "error.invalidJson",
 };
 
 function prefersReducedMotion(): boolean {
@@ -28,6 +29,7 @@ function prefersReducedMotion(): boolean {
 }
 
 export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps) {
+  const t = useT();
   const [mounted, setMounted] = useState(open);
   const [phase, setPhase] = useState<Phase>("capture");
   const [result, setResult] = useState<ExtractionResult | null>(null);
@@ -110,7 +112,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
       setPhase("confirm");
     } catch (err) {
       const kind = err instanceof GemmaError ? err.kind : "server";
-      setErrorMessage(ERROR_COPY[kind]);
+      setErrorMessage(t(ERROR_COPY[kind]));
       setPhase("error");
     }
   };
@@ -162,7 +164,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="নতুন হিসাব বলুন">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={t("record.dialogLabel")}>
       <div ref={backdropRef} className="absolute inset-0 bg-ink/40 opacity-0" aria-hidden="true" />
       <div ref={sheetRef} className="relative w-full max-w-md rounded-t-3xl bg-page-cream p-6 pb-8 opacity-0 shadow-xl sm:rounded-3xl">
         <div className="mb-4 flex justify-end">
@@ -170,7 +172,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
             ref={closeButtonRef}
             type="button"
             onClick={handleClose}
-            aria-label="বন্ধ করুন"
+            aria-label={t("common.close")}
             className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-ink/50"
           >
             ✕
@@ -194,15 +196,13 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
             <p className="text-3xl" aria-hidden="true">
               📥
             </p>
-            <p className="font-bangla text-lg font-semibold text-ink">
-              অফলাইনে আছেন — ইন্টারনেট আসলে এটি প্রসেস হবে
-            </p>
+            <p className="font-bangla text-lg font-semibold text-ink">{t("record.offline")}</p>
             <button
               type="button"
               onClick={handleClose}
               className="rounded-full bg-rule-blue px-6 py-3 font-bangla font-semibold text-white"
             >
-              ঠিক আছে
+              {t("record.ok")}
             </button>
           </div>
         )}
@@ -215,10 +215,10 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
               onClick={() => lastTranscriptRef.current && runExtraction(lastTranscriptRef.current)}
               className="rounded-full bg-khata-red px-6 py-3 font-bangla font-semibold text-white"
             >
-              আবার চেষ্টা করুন
+              {t("common.tryAgain")}
             </button>
             <button type="button" onClick={reset} className="font-bangla text-sm text-ink/60 underline">
-              নতুন করে বলুন
+              {t("record.speakAgain")}
             </button>
           </div>
         )}

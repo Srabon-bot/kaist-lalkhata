@@ -8,12 +8,14 @@ import { AnimatedTaka } from "../components/AnimatedTaka";
 import { useSettings } from "../hooks/useSettings";
 import { entriesToCsv, downloadCsv } from "../lib/csv";
 import { speakDailySummary, speechSupported } from "../lib/speech";
+import { useT } from "../lib/i18n";
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 export function KhataPage() {
+  const t = useT();
   const { settings, setNumeralStyle } = useSettings();
 
   const todayEntries = useLiveQuery(
@@ -85,13 +87,13 @@ export function KhataPage() {
   return (
     <div className="flex flex-col gap-4">
       <header className="flex items-center justify-between">
-        <h1 className="font-bangla text-2xl font-bold text-ink">আজকের খাতা</h1>
+        <h1 className="font-bangla text-2xl font-bold text-ink">{t("khata.header")}</h1>
         <div className="flex items-center gap-2">
           {speechSupported() && (
             <button
               type="button"
               onClick={handleSpeak}
-              aria-label="আজকের হিসাব শুনুন"
+              aria-label={t("khata.speakSummaryAria")}
               className={`flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 text-sm transition-transform ${speaking ? "scale-110 bg-khata-red/10" : ""}`}
             >
               🔊
@@ -101,7 +103,7 @@ export function KhataPage() {
             type="button"
             onClick={() => setNumeralStyle(settings.numeralStyle === "bn" ? "en" : "bn")}
             className="rounded-full border border-ink/15 px-3 py-1 text-xs font-semibold text-ink/60"
-            aria-label="সংখ্যা পদ্ধতি পরিবর্তন করুন"
+            aria-label={t("khata.toggleNumeralsAria")}
           >
             {settings.numeralStyle === "bn" ? "০-৯ → 0-9" : "0-9 → ০-৯"}
           </button>
@@ -109,18 +111,18 @@ export function KhataPage() {
       </header>
 
       <div className="grid grid-cols-3 gap-2">
-        <TotalCard label="আজকের নগদ" value={totals.cashTaka} numeralStyle={settings.numeralStyle} tone="green" />
+        <TotalCard label={t("khata.cashToday")} value={totals.cashTaka} numeralStyle={settings.numeralStyle} tone="green" />
         <TotalCard
-          label="আজকে বাকি"
+          label={t("khata.creditToday")}
           value={totals.creditTaka}
           numeralStyle={settings.numeralStyle}
           tone="amber"
         />
-        <TotalCard label="মোট বকেয়া" value={totalOutstanding} numeralStyle={settings.numeralStyle} tone="red" />
+        <TotalCard label={t("khata.totalOutstanding")} value={totalOutstanding} numeralStyle={settings.numeralStyle} tone="red" />
       </div>
 
       {entries.length === 0 ? (
-        <EmptyState message="প্রথম হিসাব বলুন" showArrow />
+        <EmptyState message={t("khata.empty")} showArrow />
       ) : (
         <ul ref={listRef} className="ruled-paper rounded-2xl bg-white shadow-sm">
           {entries.map((entry) => (
@@ -141,7 +143,7 @@ export function KhataPage() {
           onClick={handleExport}
           className="self-center font-bangla text-sm text-rule-blue underline"
         >
-          CSV হিসেবে ডাউনলোড করুন
+          {t("khata.downloadCsv")}
         </button>
       )}
     </div>

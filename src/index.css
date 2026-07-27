@@ -17,7 +17,27 @@
 
 @layer base {
   html {
-    background-color: var(--color-page-cream);
+    /* Matches .kantha-weave (see utilities below) — this is the global
+       fallback behind every page, so any edge case that reveals it (touch
+       overscroll bounce, a route-transition frame) shows the same themed
+       weave instead of a flat cream slab breaking the illusion. */
+    background-color: var(--color-khata-red-deep);
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--color-page-cream) 10%, transparent) 0px,
+        color-mix(in srgb, var(--color-page-cream) 10%, transparent) 3px,
+        transparent 3px,
+        transparent 17px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        color-mix(in srgb, var(--color-baki-amber) 16%, transparent) 0px,
+        color-mix(in srgb, var(--color-baki-amber) 16%, transparent) 3px,
+        transparent 3px,
+        transparent 17px
+      );
+    background-size: 24px 24px;
     color: var(--color-ink);
   }
 
@@ -55,6 +75,32 @@
   .tabular-amount {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
+  }
+
+  /* Nakshi-kantha-inspired running-stitch texture for the space behind the
+     book — Haal Khata itself sits within Bengali textile/embroidery
+     heritage (kantha quilts are traditionally covered edge-to-edge in dense
+     running stitches), so a flat color fill there undersold the theme this
+     app is actually about. Two crossing dash layers in cream + amber tint,
+     tiled — reads as woven fabric, not a solid backdrop. Applied to the
+     surrounding page background only, never to the book itself. */
+  .kantha-weave {
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--color-page-cream) 10%, transparent) 0px,
+        color-mix(in srgb, var(--color-page-cream) 10%, transparent) 3px,
+        transparent 3px,
+        transparent 17px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        color-mix(in srgb, var(--color-baki-amber) 16%, transparent) 0px,
+        color-mix(in srgb, var(--color-baki-amber) 16%, transparent) 3px,
+        transparent 3px,
+        transparent 17px
+      );
+    background-size: 24px 24px;
   }
 
   /* Ambient drifting blobs on the welcome page background */

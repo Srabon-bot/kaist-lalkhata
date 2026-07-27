@@ -4,8 +4,10 @@ import { db } from "../lib/db";
 import { EmptyState } from "../components/EmptyState";
 import { formatTaka } from "../lib/numerals";
 import { useSettings } from "../hooks/useSettings";
+import { useT } from "../lib/i18n";
 
 export function CustomersPage() {
+  const t = useT();
   const { settings } = useSettings();
   const customers = useLiveQuery(() => db.customers.orderBy("balanceTaka").reverse().toArray(), []);
 
@@ -13,10 +15,10 @@ export function CustomersPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-bangla text-2xl font-bold text-ink">কাস্টমার ও বাকি</h1>
+      <h1 className="font-bangla text-2xl font-bold text-ink">{t("customers.header")}</h1>
 
       {customers.length === 0 ? (
-        <EmptyState message="এখনো কোনো কাস্টমার নেই" />
+        <EmptyState message={t("customers.empty")} />
       ) : (
         <ul className="flex flex-col gap-2">
           {customers.map((c) => (
@@ -31,7 +33,7 @@ export function CustomersPage() {
                     c.balanceTaka > 0 ? "text-baki-amber" : "text-joma-green"
                   }`}
                 >
-                  {c.balanceTaka > 0 ? formatTaka(c.balanceTaka, settings.numeralStyle) : "পরিশোধিত"}
+                  {c.balanceTaka > 0 ? formatTaka(c.balanceTaka, settings.numeralStyle) : t("customers.paidOff")}
                 </span>
               </Link>
             </li>

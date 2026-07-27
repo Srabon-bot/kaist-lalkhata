@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { animate, type JSAnimation } from "animejs";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { MAX_RECORDING_SECONDS } from "../config";
+import { dict, useLang, useT, type DictKey } from "../lib/i18n";
 
 interface MicRecorderProps {
   onRecorded: (transcript: string) => void;
@@ -12,8 +13,19 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// Lets someone who can't speak Bangla still trigger the real extraction
+// pipeline end-to-end — taps feed straight into the same onRecorded callback
+// a finished voice recording would, no mic required.
+const SAMPLES: { transcriptKey: DictKey; glossKey: DictKey }[] = [
+  { transcriptKey: "mic.sampleCreditSale", glossKey: "type.creditSale" },
+  { transcriptKey: "mic.sampleCashSale", glossKey: "type.cashSale" },
+  { transcriptKey: "mic.sampleRepayment", glossKey: "type.repayment" },
+];
+
 export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
-  const { status, elapsedSeconds, interimText, start, stop, cancel } = useSpeechRecognition(onRecorded);
+  const t = useT();
+  const { lang } = useLang();
+  const { status, elapsedSeconds, interimText, start, stop, cancel } = useSpeechRecognition(onRecorded, lang);
   const micButtonRef = useRef<HTMLButtonElement>(null);
   const pulseRef = useRef<JSAnimation | null>(null);
 
@@ -41,18 +53,14 @@ export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
   if (status === "denied") {
     return (
       <div className="flex flex-col items-center gap-3 text-center" role="alert">
-        <p className="font-bangla text-lg font-semibold text-khata-red">
-          মাইক্রোফোন ব্যবহারের অনুমতি দেওয়া হয়নি
-        </p>
-        <p className="max-w-xs text-sm text-ink/80">
-          ব্রাউজারের ঠিকানা বারে (address bar) মাইক্রোফোন আইকনে চেপে অনুমতি দিন, তারপর আবার চেষ্টা করুন।
-        </p>
+        <p className="font-bangla text-lg font-semibold text-khata-red">{t("mic.deniedTitle")}</p>
+        <p className="max-w-xs text-sm text-ink/80">{t("mic.deniedBody")}</p>
         <button
           type="button"
           onClick={start}
           className="rounded-full bg-rule-blue px-6 py-3 font-bangla font-semibold text-white"
         >
-          আবার চেষ্টা করুন
+          {t("common.tryAgain")}
         </button>
       </div>
     );
@@ -60,9 +68,12 @@ export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
 
   if (status === "unsupported") {
     return (
-      <p className="max-w-xs text-center font-bangla text-sm text-khata-red" role="alert">
-        এই ব্রাউজারে ভয়েস রেকর্ডিং সমর্থিত নয়। Chrome ব্যবহার করে দেখুন।
-      </p>
+      <div className="flex flex-col items-center gap-4">
+        <p className="max-w-xs text-center font-bangla text-sm text-khata-red" role="alert">
+          {t("mic.unsupported")}
+        </p>
+        <SampleChips onPick={onRecorded} t={t} />
+      </div>
     );
   }
 
@@ -73,16 +84,16 @@ export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
           className="min-h-6 max-w-xs px-4 text-center font-bangla text-base text-ink/80"
           aria-live="polite"
         >
-          {status === "requesting" ? "অনুমতি চাওয়া হচ্ছে..." : interimText || "শুনছি..."}
+          {status === "requesting" ? t("mic.requesting") : interimText || t("mic.listening")}
         </p>
         <p className="tabular-amount font-bangla text-sm text-ink/70" aria-live="polite">
-          {Math.ceil(remaining)} সেকেন্ড বাকি
+          {Math.ceil(remaining)} {t("mic.secondsLeft")}
         </p>
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={cancel}
-            aria-label="বাতিল করুন"
+            aria-label={t("mic.cancel")}
             className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-ink/20 text-2xl text-ink/60"
           >
             ✕
@@ -91,30 +102,65 @@ export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
             ref={micButtonRef}
             type="button"
             onClick={stop}
-            aria-label="রেকর্ডিং থামান"
+            aria-label={t("mic.stop")}
             className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-khata-red text-3xl text-white shadow-lg"
           >
             ■
           </button>
         </div>
-        <p className="font-bangla text-sm text-ink/70">বলুন... শেষ হলে থামুন চাপুন</p>
+        <p className="font-bangla text-sm text-ink/70">{t("mic.speakThenStop")}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <button
-        ref={micButtonRef}
-        type="button"
-        disabled={disabled}
-        onClick={start}
-        aria-label="হিসাব বলার জন্য মাইক চাপুন"
-        className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-khata-red text-3xl text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
-      >
-        🎙️
-      </button>
-      <p className="font-bangla text-sm text-ink/70">কথা বলতে চাপুন</p>
+    <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-3">
+        <button
+          ref={micButtonRef}
+          type="button"
+          disabled={disabled}
+          onClick={start}
+          aria-label={t("nav.mic")}
+          className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-khata-red text-3xl text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
+        >
+          🎙️
+        </button>
+        <p className="font-bangla text-sm text-ink/70">{t("mic.tapToSpeak")}</p>
+        <p className="font-bangla text-xs text-ink/50">{t("mic.speakInLang")}</p>
+      </div>
+      <SampleChips onPick={onRecorded} t={t} />
+    </div>
+  );
+}
+
+function SampleChips({ onPick, t }: { onPick: (transcript: string) => void; t: (key: DictKey) => string }) {
+  const { lang } = useLang();
+  return (
+    <div className="flex w-full flex-col items-center gap-2 border-t border-ink/10 pt-3">
+      <p className="font-bangla text-xs text-ink/50">{t("mic.orTrySample")}</p>
+      <div className="flex flex-col gap-1.5 self-stretch">
+        {SAMPLES.map((s) => {
+          // Always send the Bangla transcript — that's what the real voice
+          // pipeline produces and what Gemma is tuned to parse. In English
+          // mode we still show a gloss underneath so the tap is legible.
+          const bnTranscript = dict[s.transcriptKey].bn;
+          return (
+            <button
+              key={s.transcriptKey}
+              type="button"
+              onClick={() => onPick(bnTranscript)}
+              className="rounded-xl border border-ink/10 bg-page-cream px-3 py-2 text-left transition-colors active:bg-ink/5"
+            >
+              <span className="mr-1.5 rounded-full bg-khata-red/10 px-2 py-0.5 font-bangla text-[10px] font-semibold text-khata-red">
+                {t(s.glossKey)}
+              </span>
+              <span className="font-bangla text-xs text-ink/70">{bnTranscript}</span>
+              {lang === "en" && <span className="block text-[11px] text-ink/50">{dict[s.transcriptKey].en}</span>}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

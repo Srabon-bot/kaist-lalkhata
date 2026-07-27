@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { animate, type JSAnimation } from "animejs";
+import { useT } from "../lib/i18n";
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -7,6 +8,7 @@ function prefersReducedMotion(): boolean {
 
 /** "Pen writing a line" wait state while Gemma parses the clip (PRD §5.4). */
 export function ParsingIndicator() {
+  const t = useT();
   const lineRef = useRef<SVGRectElement>(null);
   const animRef = useRef<JSAnimation | null>(null);
 
@@ -38,7 +40,7 @@ export function ParsingIndicator() {
           style={{ transformOrigin: "4px 12px" }}
         />
       </svg>
-      <p className="font-bangla text-sm text-ink/70">লেখা হচ্ছে...</p>
+      <p className="font-bangla text-sm text-ink/70">{t("parsing.writing")}</p>
     </div>
   );
 }

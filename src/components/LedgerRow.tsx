@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { animate, createSpring } from "animejs";
 import type { LedgerEntry } from "../lib/db";
 import { formatTaka } from "../lib/numerals";
+import { useT, type DictKey } from "../lib/i18n";
 
 interface LedgerRowProps {
   entry: LedgerEntry;
@@ -12,10 +13,10 @@ interface LedgerRowProps {
   className?: string;
 }
 
-const TYPE_META: Record<LedgerEntry["type"], { label: string; sign: "+" | "-" | ""; colorClass: string }> = {
-  cash_sale: { label: "নগদ বিক্রি", sign: "+", colorClass: "text-joma-green" },
-  credit_sale: { label: "বাকি বিক্রি", sign: "", colorClass: "text-baki-amber" },
-  repayment: { label: "বাকি শোধ", sign: "+", colorClass: "text-joma-green" },
+const TYPE_META: Record<LedgerEntry["type"], { labelKey: DictKey; sign: "+" | "-" | ""; colorClass: string }> = {
+  cash_sale: { labelKey: "type.cashSale", sign: "+", colorClass: "text-joma-green" },
+  credit_sale: { labelKey: "type.creditSale", sign: "", colorClass: "text-baki-amber" },
+  repayment: { labelKey: "type.repayment", sign: "+", colorClass: "text-joma-green" },
 };
 
 function prefersReducedMotion(): boolean {
@@ -23,6 +24,7 @@ function prefersReducedMotion(): boolean {
 }
 
 export function LedgerRow({ entry, customerName, numeralStyle, isNew, className }: LedgerRowProps) {
+  const t = useT();
   const meta = TYPE_META[entry.type];
   const time = new Date(entry.createdAt).toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" });
   const rowRef = useRef<HTMLLIElement>(null);
@@ -46,11 +48,11 @@ export function LedgerRow({ entry, customerName, numeralStyle, isNew, className 
     >
       <div className="min-w-0">
         <p className="truncate font-bangla text-base font-medium text-ink">
-          {customerName ?? (entry.type === "cash_sale" ? "নগদ" : "—")}
+          {customerName ?? (entry.type === "cash_sale" ? t("common.cash") : "—")}
           {entry.item && <span className="text-ink/50"> · {entry.item}</span>}
         </p>
         <p className="font-bangla text-xs text-ink/50">
-          {meta.label} · {time}
+          {t(meta.labelKey)} · {time}
         </p>
       </div>
       <p className={`tabular-amount shrink-0 pl-3 text-lg font-bold ${meta.colorClass}`}>

@@ -1,7 +1,6 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
-import { CoverSplash } from "./components/CoverSplash";
 import { WelcomePage, ENTERED_KEY } from "./pages/WelcomePage";
 import { KhataPage } from "./pages/KhataPage";
 import { CustomersPage } from "./pages/CustomersPage";
@@ -22,18 +21,6 @@ function RequireEntered({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function AppShell() {
-  const [coverDone, setCoverDone] = useState(false);
-  return (
-    <>
-      <CoverSplash onDone={() => setCoverDone(true)} />
-      <div style={{ visibility: coverDone ? "visible" : "hidden" }}>
-        <Layout />
-      </div>
-    </>
-  );
-}
-
 function App() {
   return (
     <BrowserRouter>
@@ -42,7 +29,7 @@ function App() {
         <Route
           element={
             <RequireEntered>
-              <AppShell />
+              <Layout />
             </RequireEntered>
           }
         >

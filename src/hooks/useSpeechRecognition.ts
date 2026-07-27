@@ -52,8 +52,17 @@ export interface UseSpeechRecognitionResult {
  * targets). Replaces raw-audio capture: Gemma's audio input isn't enabled
  * for this project's API key (see src/config.ts), so the transcript is what
  * gets sent to Gemma for structured extraction.
+ *
+ * `recognitionLang` follows the app's EN/BN UI toggle rather than being a
+ * separate setting — someone who can't speak Bangla should still be able to
+ * dictate a transaction once they've switched the app to English. Gemma's
+ * extraction is language-agnostic, so an English utterance still parses
+ * into the same structured ledger entry.
  */
-export function useSpeechRecognition(onFinished: (transcript: string) => void): UseSpeechRecognitionResult {
+export function useSpeechRecognition(
+  onFinished: (transcript: string) => void,
+  recognitionLang: "bn" | "en" = "bn",
+): UseSpeechRecognitionResult {
   const [status, setStatus] = useState<RecognitionStatus>("idle");
   const [interimText, setInterimText] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -101,7 +110,7 @@ export function useSpeechRecognition(onFinished: (transcript: string) => void): 
     finalTranscriptRef.current = "";
 
     const recognition = new Ctor();
-    recognition.lang = "bn-BD";
+    recognition.lang = recognitionLang === "en" ? "en-US" : "bn-BD";
     recognition.continuous = true;
     recognition.interimResults = true;
 
@@ -155,7 +164,7 @@ export function useSpeechRecognition(onFinished: (transcript: string) => void): 
     } catch {
       setStatus("denied");
     }
-  }, [clearTimer, onFinished]);
+  }, [clearTimer, onFinished, recognitionLang]);
 
   useEffect(
     () => () => {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { animate } from "animejs";
+import { useT, type DictKey } from "../lib/i18n";
 
 export type AuthMode = "signup" | "login";
 
@@ -13,9 +14,9 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-const COPY: Record<AuthMode, { title: string; cta: string; nameLabel: string }> = {
-  signup: { title: "সাইন আপ করুন", cta: "সাইন আপ করুন", nameLabel: "দোকানের নাম বা আপনার নাম" },
-  login: { title: "লগইন করুন", cta: "লগইন করুন", nameLabel: "আপনার নাম" },
+const COPY: Record<AuthMode, { titleKey: DictKey; ctaKey: DictKey; nameLabelKey: DictKey }> = {
+  signup: { titleKey: "auth.signupTitle", ctaKey: "auth.signupCta", nameLabelKey: "auth.signupNameLabel" },
+  login: { titleKey: "auth.loginTitle", ctaKey: "auth.loginCta", nameLabelKey: "auth.loginNameLabel" },
 };
 
 /**
@@ -25,6 +26,7 @@ const COPY: Record<AuthMode, { title: string; cta: string; nameLabel: string }> 
  * accounts). Only the display name is kept, locally, on this device.
  */
 export function AuthModal({ mode, onClose, onSubmit }: AuthModalProps) {
+  const t = useT();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,30 +58,30 @@ export function AuthModal({ mode, onClose, onSubmit }: AuthModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={copy.title}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={t(copy.titleKey)}>
       <div ref={backdropRef} className="absolute inset-0 bg-ink/50 opacity-0" onClick={onClose} aria-hidden="true" />
       <div ref={cardRef} className="relative w-full max-w-sm rounded-3xl bg-page-cream p-6 opacity-0 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-bangla text-xl font-bold text-ink">{copy.title}</h2>
-          <button type="button" onClick={onClose} aria-label="বন্ধ করুন" className="text-xl text-ink/50">
+          <h2 className="font-bangla text-xl font-bold text-ink">{t(copy.titleKey)}</h2>
+          <button type="button" onClick={onClose} aria-label={t("common.close")} className="text-xl text-ink/50">
             ✕
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="font-bangla text-xs text-ink/60">{copy.nameLabel}</span>
+            <span className="font-bangla text-xs text-ink/60">{t(copy.nameLabelKey)}</span>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               className="rounded-lg border border-ink/15 bg-white px-3 py-2 font-bangla text-base text-ink"
-              placeholder="যেমন: রহিম স্টোর"
+              placeholder={t("auth.namePlaceholder")}
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="font-bangla text-xs text-ink/60">ইমেইল</span>
+            <span className="font-bangla text-xs text-ink/60">{t("auth.email")}</span>
             <input
               type="email"
               value={email}
@@ -90,7 +92,7 @@ export function AuthModal({ mode, onClose, onSubmit }: AuthModalProps) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="font-bangla text-xs text-ink/60">পাসওয়ার্ড</span>
+            <span className="font-bangla text-xs text-ink/60">{t("auth.password")}</span>
             <input
               type="password"
               value={password}
@@ -107,11 +109,9 @@ export function AuthModal({ mode, onClose, onSubmit }: AuthModalProps) {
             disabled={!isValid}
             className="mt-2 rounded-full bg-khata-red px-4 py-3 font-bangla font-semibold text-white transition-transform active:scale-95 disabled:opacity-40"
           >
-            {copy.cta}
+            {t(copy.ctaKey)}
           </button>
-          <p className="text-center font-bangla text-[11px] text-ink/50">
-            শুধু আপনার ফোনে সংরক্ষিত হবে — কোনো সার্ভারে পাঠানো হয় না
-          </p>
+          <p className="text-center font-bangla text-[11px] text-ink/50">{t("auth.privacyNote")}</p>
         </form>
       </div>
     </div>

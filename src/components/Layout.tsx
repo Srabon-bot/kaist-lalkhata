@@ -6,6 +6,7 @@ import { BookCover } from "./BookCover";
 import { BookPage } from "./BookPage";
 import { LeftLeaf } from "./LeftLeaf";
 import { LangToggle } from "./LangToggle";
+import { HaalKhataRitual } from "./HaalKhataRitual";
 import { db, popOldestPendingRecording } from "../lib/db";
 import { ENTERED_KEY, SHOP_NAME_KEY } from "../pages/WelcomePage";
 import { useT } from "../lib/i18n";
@@ -14,6 +15,7 @@ export function Layout() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [initialTranscript, setInitialTranscript] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
+  const [demoRitualOpen, setDemoRitualOpen] = useState(false);
   const navigate = useNavigate();
   const t = useT();
 
@@ -58,6 +60,21 @@ export function Layout() {
 
   return (
     <div className="kantha-weave relative mx-auto flex min-h-dvh max-w-md flex-col bg-khata-red-deep pb-24">
+      {/* Demo-only shortcut: opens the Haal Khata ritual from anywhere,
+          without navigating to Summary first. Sits outside the book itself
+          (fixed to the viewport, not the page spread) so it's always
+          reachable mid-demo. */}
+      <button
+        type="button"
+        onClick={() => setDemoRitualOpen(true)}
+        aria-label={t("ritual.button")}
+        className="fixed right-3 top-3 z-40 flex items-center gap-1 rounded-full bg-khata-red px-3 py-1.5 font-bangla text-xs font-semibold text-white shadow-lg"
+      >
+        <span aria-hidden="true">🪔</span>
+        {t("ritual.button")}
+      </button>
+      {demoRitualOpen && <HaalKhataRitual onClose={() => setDemoRitualOpen(false)} />}
+
       {/* The flipped page — its own section, same size as the main app
           section, sitting in the (previously unused) space immediately to
           its left. On a phone-width viewport there's no room for it and it

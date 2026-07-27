@@ -7,7 +7,10 @@ import { useSettings } from "../hooks/useSettings";
 import { EmptyState } from "../components/EmptyState";
 import { ParsingIndicator } from "../components/ParsingIndicator";
 import { getWeeklyInsight, GemmaError } from "../lib/gemmaClient";
-import { useT } from "../lib/i18n";
+import { HaalKhataRitual } from "../components/HaalKhataRitual";
+import { generateShareCardBlob, shareOrDownloadCard } from "../lib/shareCard";
+import { SHOP_NAME_KEY } from "./WelcomePage";
+import { useLang, useT } from "../lib/i18n";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -15,6 +18,7 @@ type InsightState = "idle" | "loading" | "error";
 
 export function SummaryPage() {
   const t = useT();
+  const { lang } = useLang();
   const { settings } = useSettings();
 
   const todayEntries = useLiveQuery(
@@ -36,6 +40,37 @@ export function SummaryPage() {
   const [insight, setInsight] = useState<string | null>(null);
   const [insightState, setInsightState] = useState<InsightState>("idle");
   const [insightError, setInsightError] = useState("");
+  const [showRitual, setShowRitual] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  const handleShare = async () => {
+    setSharing(true);
+    try {
+      let shopName = lang === "bn" ? "আমার দোকান" : "My Shop";
+      try {
+        shopName = localStorage.getItem(SHOP_NAME_KEY) || shopName;
+      } catch {
+        /* ignore */
+      }
+      const dateLabel = new Date().toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const blob = await generateShareCardBlob({
+        shopName,
+        dateLabel,
+        lang,
+        cashTaka: weekTotals.cashTaka,
+        creditTaka: weekTotals.creditTaka,
+        repaidTaka: weekTotals.repaidTaka,
+        topCustomers: (topCustomers ?? []).slice(0, 5).map((c) => ({ name: c.name, balanceTaka: c.balanceTaka })),
+      });
+      await shareOrDownloadCard(blob, `haal-khata-${new Date().toISOString().slice(0, 10)}.png`);
+    } finally {
+      setSharing(false);
+    }
+  };
 
   const handleInsight = async () => {
     setInsightState("loading");
@@ -73,6 +108,17 @@ export function SummaryPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-bangla text-2xl font-bold text-ink">{t("summary.header")}</h1>
+
+      <button
+        type="button"
+        onClick={() => setShowRitual(true)}
+        className="flex items-center justify-center gap-2 rounded-2xl bg-khata-red px-4 py-3 font-bangla font-semibold text-white shadow-sm"
+      >
+        <span aria-hidden="true">🪔</span>
+        {t("ritual.button")}
+      </button>
+
+      {showRitual && <HaalKhataRitual onClose={() => setShowRitual(false)} />}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <h2 className="mb-3 font-bangla text-sm font-semibold text-ink/60">{t("summary.today")}</h2>
@@ -155,6 +201,16 @@ export function SummaryPage() {
           </ul>
         )}
       </section>
+
+      <button
+        type="button"
+        onClick={handleShare}
+        disabled={sharing}
+        className="flex items-center justify-center gap-2 rounded-full border-2 border-khata-red px-4 py-3 font-bangla font-semibold text-khata-red disabled:opacity-50"
+      >
+        <span aria-hidden="true">📤</span>
+        {t("summary.share")}
+      </button>
     </div>
   );
 }

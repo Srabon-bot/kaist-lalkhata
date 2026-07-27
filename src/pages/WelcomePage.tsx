@@ -24,9 +24,9 @@ const FEATURES = [
 // Real market context (see Sources) — grounds the pitch in the actual scale
 // of the problem instead of an abstract claim.
 const STATS = [
-  { value: "৪৫ লাখ+", labelKey: "welcome.stat1.label" },
-  { value: "৭৩%+", labelKey: "welcome.stat2.label" },
-  { value: "৯৪%", labelKey: "welcome.stat3.label" },
+  { valueKey: "welcome.stat1.value", labelKey: "welcome.stat1.label" },
+  { valueKey: "welcome.stat2.value", labelKey: "welcome.stat2.label" },
+  { valueKey: "welcome.stat3.value", labelKey: "welcome.stat3.label" },
 ] as const;
 
 export function WelcomePage() {
@@ -150,7 +150,7 @@ export function WelcomePage() {
         <div ref={statsRef} className="mt-6 grid w-full grid-cols-3 gap-2 opacity-0">
           {STATS.map((s) => (
             <div key={s.labelKey} className="rounded-xl bg-page-cream/10 px-2 py-3 ring-1 ring-page-cream/20">
-              <p className="font-bangla text-lg font-bold text-page-cream">{s.value}</p>
+              <p className="font-bangla text-lg font-bold text-page-cream">{t(s.valueKey)}</p>
               <p className="font-bangla text-[11px] leading-tight text-page-cream/75">{t(s.labelKey)}</p>
             </div>
           ))}

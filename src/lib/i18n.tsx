@@ -27,15 +27,18 @@ export const dict = {
   "common.close": { bn: "বন্ধ করুন", en: "Close" },
   "common.heard": { bn: "শোনা গেছে", en: "Heard" },
 
-  "welcome.title": { bn: "Haal Khata", en: "Haal Khata" },
-  "welcome.subtitle": { bn: "Haal Khata — Voice-First Bookkeeper", en: "Haal Khata — Voice-First Bookkeeper" },
+  "welcome.title": { bn: "হাল খাতা", en: "Haal Khata" },
+  "welcome.subtitle": { bn: "হাল খাতা — মুখে বলে হিসাব রাখুন", en: "Haal Khata — Voice-First Bookkeeper" },
   "welcome.poweredBy": { bn: "Google Gemma দ্বারা চালিত", en: "Powered by Google Gemma" },
   "welcome.pitch": {
     bn: "মুদি দোকানের হিসাব রাখুন কথা বলে — লিখতে হবে না, টাইপ করতে হবে না। বাংলায়, সহজে, নিজের ফোনেই।",
     en: "Keep a mudi dokan's ledger just by speaking — no writing, no typing. In Bangla, simply, right on your own phone.",
   },
+  "welcome.stat1.value": { bn: "৪৫ লাখ+", en: "4.5M+" },
   "welcome.stat1.label": { bn: "মুদি দোকান বাংলাদেশে", en: "mudi dokans in Bangladesh" },
+  "welcome.stat2.value": { bn: "৭৩%+", en: "73%+" },
   "welcome.stat2.label": { bn: "বিক্রি হয় বাকিতে", en: "of sales are on credit (baki)" },
+  "welcome.stat3.value": { bn: "৯৪%", en: "94%" },
   "welcome.stat3.label": { bn: "পরিবার মুদি দোকান থেকে কেনে", en: "of households shop at one" },
   "welcome.feature1.title": { bn: "কথা বলে লিখুন", en: "Speak it in" },
   "welcome.feature1.body": { bn: "টাইপ নয় — শুধু বলুন, খাতায় লেখা হয়ে যাবে।", en: "No typing — just speak, and it's written into the ledger." },
@@ -46,10 +49,10 @@ export const dict = {
   "welcome.signup": { bn: "সাইন আপ", en: "Sign up" },
   "welcome.login": { bn: "লগইন", en: "Log in" },
   "welcome.privacyNote": { bn: "শুধু আপনার ফোনে থাকে — কোনো সার্ভারে যায় না", en: "Stays on your phone only — never sent to a server" },
-  "welcome.whyRedInfo": { bn: "কেন \"Haal Khata\"?", en: "Why \"Haal Khata\"? Why red?" },
+  "welcome.whyRedInfo": { bn: "কেন \"হাল খাতা\"?", en: "Why \"Haal Khata\"? Why red?" },
   "welcome.langToggleHint": { bn: "ভাষা", en: "Language" },
 
-  "story.title": { bn: "কেন \"Haal Khata\"? কেন লাল রঙ?", en: "Why \"Haal Khata\"? Why red?" },
+  "story.title": { bn: "কেন \"হাল খাতা\"? কেন লাল রঙ?", en: "Why \"Haal Khata\"? Why red?" },
   "story.body1": {
     bn: "৪৩০ বছরেরও বেশি সময় ধরে বাংলার দোকানদাররা প্রতি পহেলা বৈশাখে (বাংলা নববর্ষে) নতুন খাতা খোলেন — একে বলে হালখাতা। পুরনো খাতা বন্ধ করে, গ্রাহকদের বাকি শোধ করার আমন্ত্রণ জানিয়ে, মিষ্টি ও ছোট উপহার দিয়ে নতুন বছর শুরু হতো।",
     en: "For over 430 years, Bengali shopkeepers have opened a new ledger every Pohela Boishakh (Bengali New Year) — a tradition called Haal Khata. They'd close the old book, invite customers to settle their baki (credit), and welcome them with sweets and small gifts to start the year fresh.",
@@ -59,8 +62,28 @@ export const dict = {
     en: "The ledger was almost always bound in red cloth — sturdy, and impossible to quietly alter, which is exactly why customers trusted it. That trust is the real point — the red isn't just decoration.",
   },
   "story.body3": {
-    bn: "এই অ্যাপ, Haal Khata, সেই একই বিশ্বাসকে ডিজিটাল রূপ দিয়েছে — প্রতিটি কথা বলা হিসাব হয়ে যায় একটি স্থায়ী এন্ট্রি, হাতে লেখার বদলে মুখে বলা, তবু কেন্দ্রে সেই বাকি — যার উপর মুদি দোকানের প্রায় ৭৩%+ বিক্রি নির্ভর করে।",
+    bn: "এই অ্যাপ, হাল খাতা, সেই একই বিশ্বাসকে ডিজিটাল রূপ দিয়েছে — প্রতিটি কথা বলা হিসাব হয়ে যায় একটি স্থায়ী এন্ট্রি, হাতে লেখার বদলে মুখে বলা, তবু কেন্দ্রে সেই বাকি — যার উপর মুদি দোকানের প্রায় ৭৩%+ বিক্রি নির্ভর করে।",
     en: "This app, Haal Khata, digitizes that same trust — every spoken transaction becomes a permanent entry, spoken instead of hand-written, still centered on baki, the credit system ~73%+ of mudi dokan sales run on.",
+  },
+
+  "ritual.button": { bn: "হালখাতা করুন", en: "Do Haal Khata" },
+  "ritual.title": { bn: "শুভ হালখাতা!", en: "Happy Haal Khata!" },
+  "ritual.intro": {
+    bn: "পহেলা বৈশাখে দোকানদাররা পুরনো খাতা বন্ধ করে গ্রাহকদের বাকি শোধ করার আমন্ত্রণ জানান। আজ কে কে শোধ করলেন?",
+    en: "On Pohela Boishakh, shopkeepers close the old ledger and invite customers to settle up. Who's paid today?",
+  },
+  "ritual.noOutstanding": { bn: "কারো বাকি নেই — খাতা আগে থেকেই পরিষ্কার!", en: "No one owes anything — the ledger's already clear!" },
+  "ritual.markSettled": { bn: "শোধ হয়েছে", en: "Settled" },
+  "ritual.settledBadge": { bn: "✓ শোধ", en: "✓ Settled" },
+  "ritual.finish": { bn: "নতুন বছর শুরু করুন", en: "Start the new year" },
+  "ritual.celebrationTitle": { bn: "শুভ নববর্ষ!", en: "Happy New Year!" },
+  "ritual.celebrationBody": {
+    bn: "নতুন বছর শুরু হলো — নতুন খাতায় নতুন হিসাব।",
+    en: "A fresh year begins — new ledger, new accounts.",
+  },
+  "ritual.remainingNote": {
+    bn: "এখনও কিছু বাকি আছে — চিন্তা নেই, খাতায় থেকেই যাবে।",
+    en: "Some credit is still outstanding — no worries, it stays right there in the ledger.",
   },
 
   "glossary.baki": {
@@ -160,6 +183,7 @@ export const dict = {
   "summary.viewAgain": { bn: "নতুন করে দেখুন", en: "Refresh" },
   "summary.topBaki": { bn: "সবচেয়ে বেশি বাকি", en: "Highest outstanding credit" },
   "summary.noBaki": { bn: "কারো বাকি নেই", en: "No one owes credit" },
+  "summary.share": { bn: "ছবি হিসেবে শেয়ার করুন", en: "Share as an image" },
 
   "auth.signupTitle": { bn: "সাইন আপ করুন", en: "Sign up" },
   "auth.signupCta": { bn: "সাইন আপ করুন", en: "Sign up" },

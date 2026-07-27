@@ -3,6 +3,7 @@ import { animate } from "animejs";
 import { MicRecorder } from "./MicRecorder";
 import { ParsingIndicator } from "./ParsingIndicator";
 import { ConfirmationCard, type EditedEntry } from "./ConfirmationCard";
+import { EmojiIcon } from "./EmojiIcon";
 import { extractFromTranscript, GemmaError } from "../lib/gemmaClient";
 import { recordEntry, queuePendingRecording } from "../lib/db";
 import type { ExtractionResult } from "../lib/schema";
@@ -193,9 +194,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
 
         {phase === "queued" && (
           <div className="flex flex-col items-center gap-4 py-4 text-center" role="status" aria-live="polite">
-            <p className="text-3xl" aria-hidden="true">
-              📥
-            </p>
+            <EmojiIcon src="mail.png" size={30} />
             <p className="font-bangla text-lg font-semibold text-ink">{t("record.offline")}</p>
             <button
               type="button"

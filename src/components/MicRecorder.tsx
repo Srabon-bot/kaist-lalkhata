@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { animate, type JSAnimation } from "animejs";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { EmojiIcon } from "./EmojiIcon";
 import { MAX_RECORDING_SECONDS } from "../config";
 import { dict, useLang, useT, type DictKey } from "../lib/i18n";
 
@@ -122,9 +123,9 @@ export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
           disabled={disabled}
           onClick={start}
           aria-label={t("nav.mic")}
-          className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-khata-red text-3xl text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
+          className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-khata-red text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
         >
-          🎙️
+          <EmojiIcon src="mic.png" size={30} />
         </button>
         <p className="font-bangla text-sm text-ink/70">{t("mic.tapToSpeak")}</p>
         <p className="font-bangla text-xs text-ink/50">{t("mic.speakInLang")}</p>

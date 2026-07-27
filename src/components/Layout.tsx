@@ -7,6 +7,7 @@ import { BookPage } from "./BookPage";
 import { LeftLeaf } from "./LeftLeaf";
 import { LangToggle } from "./LangToggle";
 import { HaalKhataRitual } from "./HaalKhataRitual";
+import { EmojiIcon } from "./EmojiIcon";
 import { db, popOldestPendingRecording } from "../lib/db";
 import { ENTERED_KEY, SHOP_NAME_KEY } from "../pages/WelcomePage";
 import { useT } from "../lib/i18n";
@@ -70,7 +71,7 @@ export function Layout() {
         aria-label={t("ritual.button")}
         className="fixed right-3 top-3 z-40 flex items-center gap-1 rounded-full bg-khata-red px-3 py-1.5 font-bangla text-xs font-semibold text-white shadow-lg"
       >
-        <span aria-hidden="true">🪔</span>
+        <EmojiIcon src="lamp.png" size={12} />
         {t("ritual.button")}
       </button>
       {demoRitualOpen && <HaalKhataRitual onClose={() => setDemoRitualOpen(false)} />}

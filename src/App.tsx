@@ -6,6 +6,7 @@ import { KhataPage } from "./pages/KhataPage";
 import { CustomersPage } from "./pages/CustomersPage";
 import { CustomerDetailPage } from "./pages/CustomerDetailPage";
 import { SummaryPage } from "./pages/SummaryPage";
+import { HistoryPage } from "./pages/HistoryPage";
 
 function hasEntered(): boolean {
   try {
@@ -37,6 +38,7 @@ function App() {
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/summary" element={<SummaryPage />} />
+          <Route path="/history" element={<HistoryPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

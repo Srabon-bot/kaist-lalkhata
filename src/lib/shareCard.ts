@@ -195,6 +195,136 @@ export async function generateShareCardBlob(data: ShareCardData): Promise<Blob> 
   });
 }
 
+export interface DuesReceiptData {
+  shopName: string;
+  dateLabel: string;
+  lang: Lang;
+  customers: { name: string; balanceTaka: number }[];
+}
+
+/**
+ * Renders a dedicated "outstanding dues" receipt — every customer who still
+ * owes money, in full (not just the top 5 the weekly share card shows).
+ * Meant to be generated right before the Haal Khata ritual's "start the new
+ * year" step: nothing in this app actually wipes data, but a shopkeeper
+ * starting a fresh year needs a durable, dated record of who owes what so
+ * that money isn't quietly forgotten.
+ */
+export async function generateDuesReceiptBlob(data: DuesReceiptData): Promise<Blob> {
+  await Promise.all([
+    document.fonts.load("700 40px 'Hind Siliguri'"),
+    document.fonts.load("400 24px 'Hind Siliguri'"),
+  ]).catch(() => {
+    /* best-effort — draw with whatever font is available if this fails */
+  });
+
+  const width = 900;
+  const rowHeight = 46;
+  const headerHeight = 330;
+  const footerHeight = 150;
+  const rowsHeight = Math.max(1, data.customers.length) * rowHeight;
+  const height = headerHeight + rowsHeight + footerHeight;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+
+  ctx.fillStyle = COLORS.redDeep;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = "rgba(250,243,227,0.08)";
+  ctx.lineWidth = 3;
+  for (let i = -height; i < width; i += 22) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i + height, height);
+    ctx.stroke();
+  }
+
+  const pad = 48;
+  const cardX = pad;
+  const cardY = pad;
+  const cardW = width - pad * 2;
+  const cardH = height - pad * 2;
+  roundRect(ctx, cardX, cardY, cardW, cardH, 32);
+  ctx.fillStyle = COLORS.cream;
+  ctx.fill();
+
+  let y = cardY + 80;
+  ctx.textAlign = "center";
+  ctx.fillStyle = COLORS.red;
+  ctx.font = "700 44px 'Hind Siliguri'";
+  ctx.fillText(dict["ritual.receiptTitle"][data.lang], width / 2, y);
+
+  y += 46;
+  ctx.font = "400 28px 'Hind Siliguri'";
+  ctx.fillStyle = COLORS.ink;
+  ctx.fillText(data.shopName, width / 2, y);
+
+  y += 38;
+  ctx.font = "400 22px 'Hind Siliguri'";
+  ctx.fillStyle = "rgba(38,32,26,0.6)";
+  ctx.fillText(data.dateLabel, width / 2, y);
+
+  y += 50;
+  ctx.strokeStyle = "rgba(38,32,26,0.15)";
+  ctx.beginPath();
+  ctx.moveTo(cardX + 40, y);
+  ctx.lineTo(cardX + cardW - 40, y);
+  ctx.stroke();
+  y += 46;
+
+  if (data.customers.length === 0) {
+    ctx.textAlign = "center";
+    ctx.font = "400 24px 'Hind Siliguri'";
+    ctx.fillStyle = "rgba(38,32,26,0.6)";
+    ctx.fillText(dict["ritual.noOutstanding"][data.lang], width / 2, y);
+    y += rowHeight;
+  } else {
+    for (const c of data.customers) {
+      ctx.textAlign = "left";
+      ctx.font = "400 26px 'Hind Siliguri'";
+      ctx.fillStyle = COLORS.ink;
+      ctx.fillText(c.name, cardX + 50, y);
+      ctx.textAlign = "right";
+      ctx.font = "700 26px 'Hind Siliguri'";
+      ctx.fillStyle = COLORS.amber;
+      ctx.fillText(fmtTaka(c.balanceTaka, data.lang), cardX + cardW - 50, y);
+      y += rowHeight;
+    }
+  }
+
+  y += 6;
+  ctx.strokeStyle = "rgba(38,32,26,0.15)";
+  ctx.beginPath();
+  ctx.moveTo(cardX + 40, y);
+  ctx.lineTo(cardX + cardW - 40, y);
+  ctx.stroke();
+  y += 46;
+
+  const total = data.customers.reduce((sum, c) => sum + c.balanceTaka, 0);
+  ctx.textAlign = "left";
+  ctx.font = "700 28px 'Hind Siliguri'";
+  ctx.fillStyle = COLORS.ink;
+  ctx.fillText(dict["khata.totalOutstanding"][data.lang], cardX + 50, y);
+  ctx.textAlign = "right";
+  ctx.font = "700 30px 'Hind Siliguri'";
+  ctx.fillStyle = COLORS.red;
+  ctx.fillText(fmtTaka(total, data.lang), cardX + cardW - 50, y);
+
+  const footerY = cardY + cardH - 60;
+  ctx.textAlign = "center";
+  ctx.font = "400 20px 'Hind Siliguri'";
+  ctx.fillStyle = "rgba(38,32,26,0.55)";
+  wrapText(ctx, dict["ritual.receiptFooter"][data.lang], width / 2, footerY, cardW - 100, 26);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Canvas export failed"))), "image/png");
+  });
+}
+
 /** Native share sheet when available (mobile, with file support); otherwise a plain download — same fallback pattern as the existing CSV export. */
 export async function shareOrDownloadCard(blob: Blob, filename: string): Promise<void> {
   const file = new File([blob], filename, { type: "image/png" });

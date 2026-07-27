@@ -2,13 +2,13 @@ import { Link } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import { EmptyState } from "../components/EmptyState";
-import { formatTaka } from "../lib/numerals";
-import { useSettings } from "../hooks/useSettings";
-import { useT } from "../lib/i18n";
+import { formatTaka, numeralStyleForLang } from "../lib/numerals";
+import { useLang, useT } from "../lib/i18n";
 
 export function CustomersPage() {
   const t = useT();
-  const { settings } = useSettings();
+  const { lang } = useLang();
+  const numeralStyle = numeralStyleForLang(lang);
   const customers = useLiveQuery(() => db.customers.orderBy("balanceTaka").reverse().toArray(), []);
 
   if (customers === undefined) return null;
@@ -33,7 +33,7 @@ export function CustomersPage() {
                     c.balanceTaka > 0 ? "text-baki-amber" : "text-joma-green"
                   }`}
                 >
-                  {c.balanceTaka > 0 ? formatTaka(c.balanceTaka, settings.numeralStyle) : t("customers.paidOff")}
+                  {c.balanceTaka > 0 ? formatTaka(c.balanceTaka, numeralStyle) : t("customers.paidOff")}
                 </span>
               </Link>
             </li>

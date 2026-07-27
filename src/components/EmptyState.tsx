@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { animate } from "animejs";
+import { EmojiIcon } from "./EmojiIcon";
 
 interface EmptyStateProps {
   message: string;
@@ -32,8 +33,8 @@ export function EmptyState({ message, showArrow = false }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center" role="status">
       {showArrow && (
-        <span ref={arrowRef} className="text-4xl" aria-hidden="true">
-          ⬇️
+        <span ref={arrowRef}>
+          <EmojiIcon src="downarrow.png" size={36} />
         </span>
       )}
       <p className="max-w-[220px] font-bangla text-base text-ink/60">{message}</p>

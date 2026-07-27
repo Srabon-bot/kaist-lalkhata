@@ -26,7 +26,10 @@ function prefersReducedMotion(): boolean {
 export function LedgerRow({ entry, customerName, numeralStyle, isNew, className }: LedgerRowProps) {
   const t = useT();
   const meta = TYPE_META[entry.type];
-  const time = new Date(entry.createdAt).toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" });
+  const time = new Date(entry.createdAt).toLocaleTimeString(numeralStyle === "bn" ? "bn-BD" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const rowRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {

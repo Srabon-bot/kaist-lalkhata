@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { animate, stagger } from "animejs";
-import { db, repayBaki } from "../lib/db";
-import { formatTaka } from "../lib/numerals";
-import { useSettings } from "../hooks/useSettings";
-import { useT } from "../lib/i18n";
+import { db, repayBaki, type Customer } from "../lib/db";
+import { formatTaka, numeralStyleForLang } from "../lib/numerals";
+import { generateDuesReceiptBlob, shareOrDownloadCard } from "../lib/shareCard";
+import { SHOP_NAME_KEY } from "../pages/WelcomePage";
+import { EmojiIcon } from "./EmojiIcon";
+import { useLang, useT } from "../lib/i18n";
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-const SWEETS = ["🍬", "🧁", "🍯", "🪔", "✨"];
+// "🍬" has no custom-illustrated replacement asset, so it stays a plain
+// emoji glyph while its siblings use the provided icon set.
+const SWEETS = [
+  "🍬",
+  <EmojiIcon key="cake" src="cake.png" size={24} />,
+  <EmojiIcon key="honey" src="honey.png" size={24} />,
+  <EmojiIcon key="lamp" src="lamp.png" size={24} />,
+  <EmojiIcon key="sparkle" src="sparkle.png" size={24} />,
+];
 
 /**
  * The Haal Khata ritual, turned into an actual flow instead of just a story
@@ -23,14 +33,39 @@ const SWEETS = ["🍬", "🧁", "🍯", "🪔", "✨"];
  */
 export function HaalKhataRitual({ onClose }: { onClose: () => void }) {
   const t = useT();
-  const { settings } = useSettings();
+  const { lang } = useLang();
+  const numeralStyle = numeralStyleForLang(lang);
   const customers = useLiveQuery(() => db.customers.where("balanceTaka").above(0).reverse().sortBy("balanceTaka"), []);
   const [settledIds, setSettledIds] = useState<Set<number>>(new Set());
   const [busyId, setBusyId] = useState<number | null>(null);
   const [celebrating, setCelebrating] = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
   const outstanding = customers ?? [];
-  const remainingCount = outstanding.filter((c) => !settledIds.has(c.id!)).length;
+  const remaining = outstanding.filter((c) => !settledIds.has(c.id!));
+
+  const handleDownloadReceipt = async () => {
+    setDownloadingReceipt(true);
+    try {
+      let shopName = lang === "bn" ? "আমার দোকান" : lang === "ko" ? "내 가게" : "My Shop";
+      try {
+        shopName = localStorage.getItem(SHOP_NAME_KEY) || shopName;
+      } catch {
+        /* ignore */
+      }
+      const dateLocale = lang === "bn" ? "bn-BD" : lang === "ko" ? "ko-KR" : "en-US";
+      const dateLabel = new Date().toLocaleDateString(dateLocale, { year: "numeric", month: "long", day: "numeric" });
+      const blob = await generateDuesReceiptBlob({
+        shopName,
+        dateLabel,
+        lang,
+        customers: remaining.map((c: Customer) => ({ name: c.name, balanceTaka: c.balanceTaka })),
+      });
+      await shareOrDownloadCard(blob, `dues-receipt-${new Date().toISOString().slice(0, 10)}.png`);
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  };
 
   const handleSettle = async (id: number, amount: number) => {
     setBusyId(id);
@@ -48,8 +83,9 @@ export function HaalKhataRitual({ onClose }: { onClose: () => void }) {
       <div className="relative flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-page-cream shadow-2xl">
         {!celebrating ? (
           <div className="flex flex-1 flex-col overflow-hidden p-6">
-            <p className="text-center text-4xl" aria-hidden="true">
-              🪔🍬
+            <p className="flex items-center justify-center gap-1.5" aria-hidden="true">
+              <EmojiIcon src="lamp.png" size={36} />
+              <span className="text-4xl">🍬</span>
             </p>
             <h2 className="mt-2 text-center font-bangla text-xl font-bold text-khata-red">{t("ritual.title")}</h2>
             <p className="mt-2 text-center font-bangla text-sm leading-relaxed text-ink/70">{t("ritual.intro")}</p>
@@ -70,7 +106,7 @@ export function HaalKhataRitual({ onClose }: { onClose: () => void }) {
                       <div>
                         <p className="font-bangla text-sm font-semibold text-ink">{c.name}</p>
                         <p className="tabular-amount text-xs font-semibold text-baki-amber">
-                          {formatTaka(c.balanceTaka, settings.numeralStyle)}
+                          {formatTaka(c.balanceTaka, numeralStyle)}
                         </p>
                       </div>
                       {isSettled ? (
@@ -91,23 +127,50 @@ export function HaalKhataRitual({ onClose }: { onClose: () => void }) {
               )}
             </div>
 
+            {remaining.length > 0 && (
+              <button
+                type="button"
+                disabled={downloadingReceipt}
+                onClick={handleDownloadReceipt}
+                className="mt-3 shrink-0 rounded-full border-2 border-khata-red px-6 py-2.5 font-bangla text-sm font-semibold text-khata-red disabled:opacity-50"
+              >
+                <EmojiIcon src="due-receipt.png" size={14} className="mr-1.5" />
+                {t("ritual.downloadReceipt")}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setCelebrating(true)}
-              className="mt-5 shrink-0 rounded-full bg-khata-red px-6 py-3 font-bangla font-semibold text-white"
+              className="mt-3 shrink-0 rounded-full bg-khata-red px-6 py-3 font-bangla font-semibold text-white"
             >
               {t("ritual.finish")}
             </button>
           </div>
         ) : (
-          <Celebration onClose={onClose} remainingCount={remainingCount} />
+          <Celebration
+            onClose={onClose}
+            remainingCount={remaining.length}
+            onDownloadReceipt={handleDownloadReceipt}
+            downloadingReceipt={downloadingReceipt}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function Celebration({ onClose, remainingCount }: { onClose: () => void; remainingCount: number }) {
+function Celebration({
+  onClose,
+  remainingCount,
+  onDownloadReceipt,
+  downloadingReceipt,
+}: {
+  onClose: () => void;
+  remainingCount: number;
+  onDownloadReceipt: () => void;
+  downloadingReceipt: boolean;
+}) {
   const t = useT();
   const sweetsRef = useRef<HTMLDivElement>(null);
 
@@ -133,12 +196,25 @@ function Celebration({ onClose, remainingCount }: { onClose: () => void; remaini
           </span>
         ))}
       </div>
-      <p className="text-5xl" aria-hidden="true">
-        🎉
+      <p aria-hidden="true">
+        <EmojiIcon src="confetti.png" size={48} />
       </p>
       <h2 className="mt-3 font-bangla text-2xl font-bold text-khata-red">{t("ritual.celebrationTitle")}</h2>
       <p className="mt-2 font-bangla text-sm text-ink/70">{t("ritual.celebrationBody")}</p>
-      {remainingCount > 0 && <p className="mt-3 font-bangla text-xs text-ink/50">{t("ritual.remainingNote")}</p>}
+      {remainingCount > 0 && (
+        <>
+          <p className="mt-3 font-bangla text-xs text-ink/50">{t("ritual.remainingNote")}</p>
+          <button
+            type="button"
+            disabled={downloadingReceipt}
+            onClick={onDownloadReceipt}
+            className="mt-3 rounded-full border-2 border-khata-red px-5 py-2 font-bangla text-sm font-semibold text-khata-red disabled:opacity-50"
+          >
+            <EmojiIcon src="due-receipt.png" size={14} className="mr-1.5" />
+            {t("ritual.downloadReceipt")}
+          </button>
+        </>
+      )}
       <button
         type="button"
         onClick={onClose}

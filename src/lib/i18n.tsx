@@ -15,6 +15,7 @@ export const dict = {
   "nav.khata": { bn: "খাতা", en: "Ledger", ko: "장부" },
   "nav.customers": { bn: "কাস্টমার", en: "Customers", ko: "고객" },
   "nav.summary": { bn: "সারাংশ", en: "Summary", ko: "요약" },
+  "nav.history": { bn: "ইতিহাস", en: "History", ko: "기록" },
   "nav.mainMenu": { bn: "প্রধান মেনু", en: "Main menu", ko: "메인 메뉴" },
   "nav.mic": { bn: "হিসাব বলার জন্য মাইক চাপুন", en: "Tap the mic to speak a transaction", ko: "거래를 말하려면 마이크를 누르세요" },
   "layout.logout": { bn: "লগআউট", en: "Log out", ko: "로그아웃" },
@@ -93,6 +94,13 @@ export const dict = {
     en: "Some credit is still outstanding — no worries, it stays right there in the ledger.",
     ko: "아직 남은 외상이 있어요 — 걱정 마세요, 장부에 그대로 남아 있습니다.",
   },
+  "ritual.downloadReceipt": { bn: "বাকির রসিদ ডাউনলোড করুন", en: "Download dues receipt", ko: "미수금 영수증 다운로드" },
+  "ritual.receiptTitle": { bn: "বাকির রসিদ", en: "Outstanding Dues Receipt", ko: "미수금 영수증" },
+  "ritual.receiptFooter": {
+    bn: "নতুন বছরের খাতা শুরুর আগে এই রসিদ রেখে দিন — কারো বাকি হারিয়ে যাবে না।",
+    en: "Keep this receipt before starting the new year's ledger — no one's dues get lost.",
+    ko: "새해 장부를 시작하기 전에 이 영수증을 보관하세요 — 아무의 외상도 사라지지 않습니다.",
+  },
 
   "glossary.baki": {
     bn: "বাকি মানে ধারে বিক্রি — গ্রাহক এখন পণ্য নেয়, পরে টাকা দেয়। দোকানদার সেই হিসাব খাতায় রাখেন।",
@@ -164,7 +172,6 @@ export const dict = {
 
   "khata.header": { bn: "আজকের খাতা", en: "Today's Ledger", ko: "오늘의 장부" },
   "khata.speakSummaryAria": { bn: "আজকের হিসাব শুনুন", en: "Hear today's summary", ko: "오늘의 요약 듣기" },
-  "khata.toggleNumeralsAria": { bn: "সংখ্যা পদ্ধতি পরিবর্তন করুন", en: "Switch numeral style", ko: "숫자 표기 전환" },
   "khata.cashToday": { bn: "আজকের নগদ", en: "Cash today", ko: "오늘 현금" },
   "khata.creditToday": { bn: "আজকে বাকি", en: "Credit today", ko: "오늘 외상" },
   "khata.totalOutstanding": { bn: "মোট বকেয়া", en: "Total outstanding", ko: "총 미수금" },
@@ -203,6 +210,17 @@ export const dict = {
     en: "73%+ of mudi dokan sales in Bangladesh run on credit — Haal Khata keeps track, just by voice.",
     ko: "방글라데시 구멍가게 매출의 73%+가 외상으로 이루어집니다 — 할 카타는 말만으로 그 기록을 지켜줍니다.",
   },
+
+  "history.header": { bn: "এই বছরের ইতিহাস", en: "This Year's History", ko: "올해의 기록" },
+  "history.empty": { bn: "এখনো কোনো লেনদেন নেই", en: "No transactions yet", ko: "아직 거래 내역이 없습니다" },
+  "history.rollback": { bn: "বাতিল করুন", en: "Roll back", ko: "되돌리기" },
+  "history.rollbackConfirmTitle": { bn: "এই লেনদেনটি বাতিল করবেন?", en: "Roll back this transaction?", ko: "이 거래를 되돌릴까요?" },
+  "history.rollbackConfirmBody": {
+    bn: "এটি খাতা ও কাস্টমারের বাকি থেকে এই এন্ট্রিটি সরিয়ে দেবে। এটি ফেরানো যাবে না।",
+    en: "This removes the entry from the ledger and reverses its effect on the customer's balance. This can't be undone.",
+    ko: "이 항목이 장부에서 삭제되고 고객 잔액에서도 반영이 취소됩니다. 되돌릴 수 없습니다.",
+  },
+  "history.rollbackYes": { bn: "হ্যাঁ, বাতিল করুন", en: "Yes, roll it back", ko: "예, 되돌리기" },
 
   "auth.signupTitle": { bn: "সাইন আপ করুন", en: "Sign up", ko: "회원가입" },
   "auth.signupCta": { bn: "সাইন আপ করুন", en: "Sign up", ko: "회원가입" },

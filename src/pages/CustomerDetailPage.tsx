@@ -6,8 +6,8 @@ import { db, repayBaki } from "../lib/db";
 import { LedgerRow } from "../components/LedgerRow";
 import { EmptyState } from "../components/EmptyState";
 import { AnimatedTaka } from "../components/AnimatedTaka";
-import { useSettings } from "../hooks/useSettings";
-import { useT } from "../lib/i18n";
+import { numeralStyleForLang } from "../lib/numerals";
+import { useLang, useT } from "../lib/i18n";
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -18,7 +18,8 @@ export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const customerId = Number(id);
   const navigate = useNavigate();
-  const { settings } = useSettings();
+  const { lang } = useLang();
+  const numeralStyle = numeralStyleForLang(lang);
 
   const customer = useLiveQuery(() => db.customers.get(customerId), [customerId]);
   const history = useLiveQuery(
@@ -73,7 +74,7 @@ export function CustomerDetailPage() {
         <div className="flex items-center justify-center gap-2">
           <AnimatedTaka
             value={Math.max(0, customer.balanceTaka)}
-            numeralStyle={settings.numeralStyle}
+            numeralStyle={numeralStyle}
             className={`tabular-amount text-3xl font-bold transition-colors duration-300 ${
               customer.balanceTaka > 0 ? "text-baki-amber" : "text-joma-green"
             }`}
@@ -133,7 +134,7 @@ export function CustomerDetailPage() {
       ) : (
         <ul className="ruled-paper rounded-2xl bg-white shadow-sm">
           {history.map((entry) => (
-            <LedgerRow key={entry.id} entry={entry} customerName={customer.name} numeralStyle={settings.numeralStyle} />
+            <LedgerRow key={entry.id} entry={entry} customerName={customer.name} numeralStyle={numeralStyle} />
           ))}
         </ul>
       )}

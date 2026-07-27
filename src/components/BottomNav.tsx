@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { EmojiIcon } from "./EmojiIcon";
 import { useT, type DictKey } from "../lib/i18n";
 
 interface BottomNavProps {
@@ -6,9 +7,10 @@ interface BottomNavProps {
 }
 
 const NAV_ITEMS = [
-  { to: "/", labelKey: "nav.khata", icon: "📖", end: true },
-  { to: "/customers", labelKey: "nav.customers", icon: "👥", end: false },
-  { to: "/summary", labelKey: "nav.summary", icon: "📊", end: false },
+  { to: "/", labelKey: "nav.khata", icon: "book.png", end: true },
+  { to: "/customers", labelKey: "nav.customers", icon: "people2.png", end: false },
+  { to: "/summary", labelKey: "nav.summary", icon: "analytics2.png", end: false },
+  { to: "/history", labelKey: "nav.history", icon: "watch2.png", end: false },
 ] as const satisfies { to: string; labelKey: DictKey; icon: string; end: boolean }[];
 
 export function BottomNav({ onMicClick }: BottomNavProps) {
@@ -33,9 +35,9 @@ export function BottomNav({ onMicClick }: BottomNavProps) {
           type="button"
           onClick={onMicClick}
           aria-label={t("nav.mic")}
-          className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-khata-red text-2xl text-white shadow-lg ring-4 ring-page-cream active:scale-95"
+          className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-khata-red text-white shadow-lg ring-4 ring-page-cream active:scale-95"
         >
-          🎙️
+          <EmojiIcon src="mic.png" size={24} />
         </button>
       </div>
     </nav>
@@ -54,9 +56,7 @@ function NavItem({ to, labelKey, icon, end }: { to: string; labelKey: DictKey; i
         }`
       }
     >
-      <span className="text-xl" aria-hidden="true">
-        {icon}
-      </span>
+      <EmojiIcon src={icon} size={20} />
       {t(labelKey)}
     </NavLink>
   );

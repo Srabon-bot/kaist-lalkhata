@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link } from "react-router-dom";
 import { db, startOfToday, computeTotals } from "../lib/db";
-import { formatTaka } from "../lib/numerals";
-import { useSettings } from "../hooks/useSettings";
+import { formatTaka, numeralStyleForLang } from "../lib/numerals";
 import { EmptyState } from "../components/EmptyState";
+import { EmojiIcon } from "../components/EmojiIcon";
 import { ParsingIndicator } from "../components/ParsingIndicator";
 import { getWeeklyInsight, GemmaError } from "../lib/gemmaClient";
 import { HaalKhataRitual } from "../components/HaalKhataRitual";
@@ -19,7 +19,7 @@ type InsightState = "idle" | "loading" | "error";
 export function SummaryPage() {
   const t = useT();
   const { lang } = useLang();
-  const { settings } = useSettings();
+  const numeralStyle = numeralStyleForLang(lang);
 
   const todayEntries = useLiveQuery(
     () => db.entries.where("createdAt").aboveOrEqual(startOfToday()).toArray(),
@@ -115,7 +115,7 @@ export function SummaryPage() {
         onClick={() => setShowRitual(true)}
         className="flex items-center justify-center gap-2 rounded-2xl bg-khata-red px-4 py-3 font-bangla font-semibold text-white shadow-sm"
       >
-        <span aria-hidden="true">🪔</span>
+        <EmojiIcon src="lamp.png" size={16} />
         {t("ritual.button")}
       </button>
 
@@ -123,16 +123,16 @@ export function SummaryPage() {
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <h2 className="mb-3 font-bangla text-sm font-semibold text-ink/60">{t("summary.today")}</h2>
-        <StatRow label={t("summary.cashSale")} value={todayTotals.cashTaka} numeralStyle={settings.numeralStyle} tone="green" />
-        <StatRow label={t("summary.creditGiven")} value={todayTotals.creditTaka} numeralStyle={settings.numeralStyle} tone="amber" />
-        <StatRow label={t("summary.creditRepaid")} value={todayTotals.repaidTaka} numeralStyle={settings.numeralStyle} tone="green" />
+        <StatRow label={t("summary.cashSale")} value={todayTotals.cashTaka} numeralStyle={numeralStyle} tone="green" />
+        <StatRow label={t("summary.creditGiven")} value={todayTotals.creditTaka} numeralStyle={numeralStyle} tone="amber" />
+        <StatRow label={t("summary.creditRepaid")} value={todayTotals.repaidTaka} numeralStyle={numeralStyle} tone="green" />
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <h2 className="mb-3 font-bangla text-sm font-semibold text-ink/60">{t("summary.last7Days")}</h2>
-        <StatRow label={t("summary.cashSale")} value={weekTotals.cashTaka} numeralStyle={settings.numeralStyle} tone="green" />
-        <StatRow label={t("summary.creditGiven")} value={weekTotals.creditTaka} numeralStyle={settings.numeralStyle} tone="amber" />
-        <StatRow label={t("summary.creditRepaid")} value={weekTotals.repaidTaka} numeralStyle={settings.numeralStyle} tone="green" />
+        <StatRow label={t("summary.cashSale")} value={weekTotals.cashTaka} numeralStyle={numeralStyle} tone="green" />
+        <StatRow label={t("summary.creditGiven")} value={weekTotals.creditTaka} numeralStyle={numeralStyle} tone="amber" />
+        <StatRow label={t("summary.creditRepaid")} value={weekTotals.repaidTaka} numeralStyle={numeralStyle} tone="green" />
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
@@ -194,7 +194,7 @@ export function SummaryPage() {
                 <Link to={`/customers/${c.id}`} className="flex items-center justify-between py-1">
                   <span className="font-bangla text-ink">{c.name}</span>
                   <span className="tabular-amount font-bold text-baki-amber">
-                    {formatTaka(c.balanceTaka, settings.numeralStyle)}
+                    {formatTaka(c.balanceTaka, numeralStyle)}
                   </span>
                 </Link>
               </li>
@@ -209,7 +209,7 @@ export function SummaryPage() {
         disabled={sharing}
         className="flex items-center justify-center gap-2 rounded-full border-2 border-khata-red px-4 py-3 font-bangla font-semibold text-khata-red disabled:opacity-50"
       >
-        <span aria-hidden="true">📤</span>
+        <EmojiIcon src="share.png" size={16} />
         {t("summary.share")}
       </button>
     </div>

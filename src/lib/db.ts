@@ -29,13 +29,6 @@ export interface Customer {
   updatedAt: number;
 }
 
-export interface Settings {
-  id: number; // fixed row id = 1
-  numeralStyle: "bn" | "en";
-}
-
-export const SETTINGS_ID = 1;
-
 /** An utterance transcribed while offline, queued for extraction once back online (PRD F8). */
 export interface PendingRecording {
   id?: number;
@@ -46,7 +39,6 @@ export interface PendingRecording {
 class LalKhataDB extends Dexie {
   entries!: EntityTable<LedgerEntry, "id">;
   customers!: EntityTable<Customer, "id">;
-  settings!: EntityTable<Settings, "id">;
   pendingRecordings!: EntityTable<PendingRecording, "id">;
 
   constructor() {
@@ -54,7 +46,6 @@ class LalKhataDB extends Dexie {
     this.version(1).stores({
       entries: "++id, type, customerId, createdAt",
       customers: "++id, &normalizedName, balanceTaka",
-      settings: "id",
     });
     this.version(2).stores({
       pendingRecordings: "++id, createdAt",
@@ -66,14 +57,6 @@ export const db = new LalKhataDB();
 
 export function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-export async function ensureSettings(): Promise<Settings> {
-  const existing = await db.settings.get(SETTINGS_ID);
-  if (existing) return existing;
-  const defaults: Settings = { id: SETTINGS_ID, numeralStyle: "bn" };
-  await db.settings.put(defaults);
-  return defaults;
 }
 
 /** Finds a customer by (normalized) name, creating one if it doesn't exist yet. */
@@ -159,6 +142,40 @@ export async function repayBaki(customerId: number, amountTaka: number): Promise
       updatedAt: Date.now(),
     });
   });
+}
+
+/** Undoes a ledger entry: reverses its effect on the customer's baki balance
+ * (if any), then removes it. Used by the History page's "roll back" action —
+ * the counterpart to recordEntry/repayBaki, for correcting a mistaken or
+ * unwanted entry after the fact rather than only at confirm-time. */
+export async function rollbackEntry(entryId: number): Promise<void> {
+  await db.transaction("rw", db.entries, db.customers, async () => {
+    const entry = await db.entries.get(entryId);
+    if (!entry) return;
+
+    if (entry.customerId != null) {
+      const customer = await db.customers.get(entry.customerId);
+      if (customer) {
+        const reverseDelta =
+          entry.type === "credit_sale" ? -entry.amountTaka : entry.type === "repayment" ? entry.amountTaka : 0;
+        if (reverseDelta !== 0) {
+          await db.customers.update(entry.customerId, {
+            balanceTaka: customer.balanceTaka + reverseDelta,
+            updatedAt: Date.now(),
+          });
+        }
+      }
+    }
+
+    await db.entries.delete(entryId);
+  });
+}
+
+export function startOfThisYear(): number {
+  const d = new Date();
+  d.setMonth(0, 1);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
 }
 
 export function startOfToday(): number {

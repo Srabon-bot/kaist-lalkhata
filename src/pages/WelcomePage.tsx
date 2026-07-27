@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { createTimeline, stagger } from "animejs";
 import { AuthModal, type AuthMode } from "../components/AuthModal";
@@ -6,7 +6,8 @@ import { KhataBackdrop } from "../components/KhataBackdrop";
 import { CultureStoryCard } from "../components/CultureStoryCard";
 import { GlossaryTerm } from "../components/GlossaryTerm";
 import { LangToggle } from "../components/LangToggle";
-import { useLang, useT } from "../lib/i18n";
+import { EmojiIcon } from "../components/EmojiIcon";
+import { useLang, useT, type DictKey } from "../lib/i18n";
 
 export const ENTERED_KEY = "lal-khata-entered";
 export const SHOP_NAME_KEY = "lal-khata-shop-name";
@@ -15,11 +16,13 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-const FEATURES = [
-  { icon: "🎙️", titleKey: "welcome.feature1.title", bodyKey: "welcome.feature1.body" },
+// "🧾" has no custom-illustrated replacement asset, so it stays a plain emoji
+// glyph while its siblings use the provided icon set.
+const FEATURES: { icon: ReactNode; titleKey: DictKey; bodyKey: DictKey }[] = [
+  { icon: <EmojiIcon src="mic.png" size={24} />, titleKey: "welcome.feature1.title", bodyKey: "welcome.feature1.body" },
   { icon: "🧾", titleKey: "welcome.feature2.title", bodyKey: "welcome.feature2.body" },
-  { icon: "🔒", titleKey: "welcome.feature3.title", bodyKey: "welcome.feature3.body" },
-] as const;
+  { icon: <EmojiIcon src="lock.png" size={24} />, titleKey: "welcome.feature3.title", bodyKey: "welcome.feature3.body" },
+];
 
 // Real market context (see Sources) — grounds the pitch in the actual scale
 // of the problem instead of an abstract claim.

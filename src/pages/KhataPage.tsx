@@ -5,10 +5,11 @@ import { db, startOfToday, computeTotals } from "../lib/db";
 import { LedgerRow } from "../components/LedgerRow";
 import { EmptyState } from "../components/EmptyState";
 import { AnimatedTaka } from "../components/AnimatedTaka";
-import { useSettings } from "../hooks/useSettings";
+import { EmojiIcon } from "../components/EmojiIcon";
+import { numeralStyleForLang } from "../lib/numerals";
 import { entriesToCsv, downloadCsv } from "../lib/csv";
 import { speakDailySummary, speechSupported } from "../lib/speech";
-import { useT } from "../lib/i18n";
+import { useLang, useT } from "../lib/i18n";
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -16,7 +17,8 @@ function prefersReducedMotion(): boolean {
 
 export function KhataPage() {
   const t = useT();
-  const { settings, setNumeralStyle } = useSettings();
+  const { lang } = useLang();
+  const numeralStyle = numeralStyleForLang(lang);
 
   const todayEntries = useLiveQuery(
     () => db.entries.where("createdAt").aboveOrEqual(startOfToday()).reverse().sortBy("createdAt"),
@@ -94,31 +96,23 @@ export function KhataPage() {
               type="button"
               onClick={handleSpeak}
               aria-label={t("khata.speakSummaryAria")}
-              className={`flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 text-sm transition-transform ${speaking ? "scale-110 bg-khata-red/10" : ""}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 transition-transform ${speaking ? "scale-110 bg-khata-red/10" : ""}`}
             >
-              🔊
+              <EmojiIcon src="sound2.png" size={14} />
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => setNumeralStyle(settings.numeralStyle === "bn" ? "en" : "bn")}
-            className="rounded-full border border-ink/15 px-3 py-1 text-xs font-semibold text-ink/60"
-            aria-label={t("khata.toggleNumeralsAria")}
-          >
-            {settings.numeralStyle === "bn" ? "০-৯ → 0-9" : "0-9 → ০-৯"}
-          </button>
         </div>
       </header>
 
       <div className="grid grid-cols-3 gap-2">
-        <TotalCard label={t("khata.cashToday")} value={totals.cashTaka} numeralStyle={settings.numeralStyle} tone="green" />
+        <TotalCard label={t("khata.cashToday")} value={totals.cashTaka} numeralStyle={numeralStyle} tone="green" />
         <TotalCard
           label={t("khata.creditToday")}
           value={totals.creditTaka}
-          numeralStyle={settings.numeralStyle}
+          numeralStyle={numeralStyle}
           tone="amber"
         />
-        <TotalCard label={t("khata.totalOutstanding")} value={totalOutstanding} numeralStyle={settings.numeralStyle} tone="red" />
+        <TotalCard label={t("khata.totalOutstanding")} value={totalOutstanding} numeralStyle={numeralStyle} tone="red" />
       </div>
 
       {entries.length === 0 ? (
@@ -130,7 +124,7 @@ export function KhataPage() {
               key={entry.id}
               entry={entry}
               customerName={entry.customerId ? (customersById.get(entry.customerId)?.name ?? null) : null}
-              numeralStyle={settings.numeralStyle}
+              numeralStyle={numeralStyle}
               isNew={entry.id === newEntryId}
             />
           ))}

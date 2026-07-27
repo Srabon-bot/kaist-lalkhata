@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="লাল খাতা">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#B3261E" />
+  <rect x="2" y="2" width="10" height="60" rx="4" fill="#7A1512" />
+  <rect x="20" y="12" width="34" height="40" rx="3" fill="#FAF3E3" />
+  <rect x="26" y="21" width="22" height="3" rx="1.5" fill="#3D5A80" opacity="0.55" />
+  <rect x="26" y="29" width="22" height="3" rx="1.5" fill="#3D5A80" opacity="0.55" />
+  <rect x="26" y="37" width="14" height="3" rx="1.5" fill="#985200" opacity="0.8" />
+</svg>

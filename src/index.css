@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@theme {
+  /* Color tokens — PRD §5.1 */
+  --color-khata-red: #b3261e;
+  --color-khata-red-deep: #7a1512;
+  --color-page-cream: #faf3e3;
+  --color-rule-blue: #3d5a80;
+  --color-ink: #26201a;
+  --color-baki-amber: #985200; /* darkened from #C97B1E — 5.36:1 on cream, passes WCAG AA */
+  --color-joma-green: #2e7d4f;
+
+  /* Typography — PRD §5.2 */
+  --font-display: "Hind Siliguri", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", "Hind Siliguri", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-page-cream);
+    color: var(--color-ink);
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 16px;
+    min-height: 100dvh;
+  }
+
+  :lang(bn),
+  .font-bangla {
+    font-family: var(--font-display);
+  }
+
+  /* Visible keyboard focus everywhere — PRD §5.5 */
+  :focus-visible {
+    outline: 3px solid var(--color-rule-blue);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  /* Faint repeating ruled-paper background for ledger rows — PRD §5.3 */
+  .ruled-paper {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 47px,
+      color-mix(in srgb, var(--color-rule-blue) 18%, transparent) 48px
+    );
+  }
+
+  .tabular-amount {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Ambient drifting blobs on the welcome page background */
+  .blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(60px);
+    opacity: 0.35;
+    animation: blob-drift 24s ease-in-out infinite alternate;
+  }
+  .blob-a {
+    width: 280px;
+    height: 280px;
+    top: -70px;
+    left: -70px;
+    animation-duration: 26s;
+  }
+  .blob-b {
+    width: 240px;
+    height: 240px;
+    bottom: -50px;
+    right: -50px;
+    animation-duration: 20s;
+    animation-delay: -6s;
+  }
+  .blob-c {
+    width: 200px;
+    height: 200px;
+    top: 42%;
+    left: 58%;
+    animation-duration: 30s;
+    animation-delay: -12s;
+  }
+}
+
+.khata-breathe {
+  transform-origin: center;
+  animation: khata-breathe 7s ease-in-out infinite;
+}
+
+@keyframes khata-breathe {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.035) rotate(-0.8deg);
+  }
+}
+
+.xeno-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: xeno-spin 16s linear infinite;
+}
+
+@keyframes xeno-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes blob-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(24px, -32px) scale(1.15);
+  }
+  100% {
+    transform: translate(-18px, 22px) scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

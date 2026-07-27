@@ -1,4 +1,4 @@
-import type { Lang } from "./i18n";
+import { dict, type Lang } from "./i18n";
 import { toBanglaDigits } from "./numerals";
 
 export interface ShareCardData {
@@ -107,7 +107,7 @@ export async function generateShareCardBlob(data: ShareCardData): Promise<Blob> 
   ctx.textAlign = "center";
   ctx.fillStyle = COLORS.red;
   ctx.font = "700 56px 'Hind Siliguri'";
-  ctx.fillText(data.lang === "bn" ? "হাল খাতা" : "Haal Khata", width / 2, y);
+  ctx.fillText(dict["welcome.title"][data.lang], width / 2, y);
 
   y += 50;
   ctx.font = "400 28px 'Hind Siliguri'";
@@ -128,9 +128,9 @@ export async function generateShareCardBlob(data: ShareCardData): Promise<Blob> 
 
   y += 60;
   const stats = [
-    { label: data.lang === "bn" ? "নগদ বিক্রি" : "Cash sales", value: data.cashTaka, color: COLORS.green },
-    { label: data.lang === "bn" ? "বাকি দেওয়া" : "Credit given", value: data.creditTaka, color: COLORS.amber },
-    { label: data.lang === "bn" ? "বাকি শোধ" : "Credit repaid", value: data.repaidTaka, color: COLORS.green },
+    { label: dict["summary.cashSale"][data.lang], value: data.cashTaka, color: COLORS.green },
+    { label: dict["summary.creditGiven"][data.lang], value: data.creditTaka, color: COLORS.amber },
+    { label: dict["summary.creditRepaid"][data.lang], value: data.repaidTaka, color: COLORS.green },
   ];
   for (const s of stats) {
     ctx.textAlign = "left";
@@ -155,13 +155,13 @@ export async function generateShareCardBlob(data: ShareCardData): Promise<Blob> 
   ctx.textAlign = "left";
   ctx.font = "700 26px 'Hind Siliguri'";
   ctx.fillStyle = COLORS.ink;
-  ctx.fillText(data.lang === "bn" ? "সবচেয়ে বেশি বাকি" : "Highest outstanding credit", cardX + 50, y);
+  ctx.fillText(dict["summary.topBaki"][data.lang], cardX + 50, y);
   y += 46;
 
   if (data.topCustomers.length === 0) {
     ctx.font = "400 24px 'Hind Siliguri'";
     ctx.fillStyle = "rgba(38,32,26,0.6)";
-    ctx.fillText(data.lang === "bn" ? "কারো বাকি নেই" : "No one owes credit", cardX + 50, y);
+    ctx.fillText(dict["summary.noBaki"][data.lang], cardX + 50, y);
     y += 40;
   } else {
     for (const c of data.topCustomers.slice(0, 5)) {
@@ -183,9 +183,7 @@ export async function generateShareCardBlob(data: ShareCardData): Promise<Blob> 
   ctx.fillStyle = "rgba(38,32,26,0.55)";
   wrapText(
     ctx,
-    data.lang === "bn"
-      ? "বাংলাদেশে ৭৩%+ মুদি দোকানের বিক্রি বাকিতে হয় — হাল খাতা কথা বলেই সেই হিসাব রাখে।"
-      : "73%+ of mudi dokan sales in Bangladesh run on credit — Haal Khata keeps track, just by voice.",
+    dict["summary.shareFooter"][data.lang],
     width / 2,
     footerY,
     cardW - 100,

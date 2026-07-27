@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MAX_RECORDING_SECONDS } from "../config";
+import type { Lang } from "../lib/i18n";
+
+const RECOGNITION_LOCALE: Record<Lang, string> = { bn: "bn-BD", en: "en-US", ko: "ko-KR" };
 
 export type RecognitionStatus = "idle" | "requesting" | "listening" | "denied" | "unsupported";
 
@@ -61,7 +64,7 @@ export interface UseSpeechRecognitionResult {
  */
 export function useSpeechRecognition(
   onFinished: (transcript: string) => void,
-  recognitionLang: "bn" | "en" = "bn",
+  recognitionLang: Lang = "bn",
 ): UseSpeechRecognitionResult {
   const [status, setStatus] = useState<RecognitionStatus>("idle");
   const [interimText, setInterimText] = useState("");
@@ -110,7 +113,7 @@ export function useSpeechRecognition(
     finalTranscriptRef.current = "";
 
     const recognition = new Ctor();
-    recognition.lang = recognitionLang === "en" ? "en-US" : "bn-BD";
+    recognition.lang = RECOGNITION_LOCALE[recognitionLang];
     recognition.continuous = true;
     recognition.interimResults = true;
 

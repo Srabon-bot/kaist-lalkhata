@@ -46,13 +46,14 @@ export function SummaryPage() {
   const handleShare = async () => {
     setSharing(true);
     try {
-      let shopName = lang === "bn" ? "আমার দোকান" : "My Shop";
+      let shopName = lang === "bn" ? "আমার দোকান" : lang === "ko" ? "내 가게" : "My Shop";
       try {
         shopName = localStorage.getItem(SHOP_NAME_KEY) || shopName;
       } catch {
         /* ignore */
       }
-      const dateLabel = new Date().toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", {
+      const dateLocale = lang === "bn" ? "bn-BD" : lang === "ko" ? "ko-KR" : "en-US";
+      const dateLabel = new Date().toLocaleDateString(dateLocale, {
         year: "numeric",
         month: "long",
         day: "numeric",

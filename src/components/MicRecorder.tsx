@@ -156,7 +156,7 @@ function SampleChips({ onPick, t }: { onPick: (transcript: string) => void; t: (
                 {t(s.glossKey)}
               </span>
               <span className="font-bangla text-xs text-ink/70">{bnTranscript}</span>
-              {lang === "en" && <span className="block text-[11px] text-ink/50">{dict[s.transcriptKey].en}</span>}
+              {lang !== "bn" && <span className="block text-[11px] text-ink/50">{dict[s.transcriptKey][lang]}</span>}
             </button>
           );
         })}

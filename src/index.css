@@ -88,11 +88,14 @@
      on Chromium (shows up as a seamed, "fragmented" image instead of one
      smooth blur); backdrop-filter samples the composited backdrop through
      a different, artifact-free path. The faint tint is there mainly to
-     guarantee Safari actually triggers the backdrop-filter pass. */
+     guarantee Safari actually triggers the backdrop-filter pass.
+     Only the unprefixed property is written here — Lightning CSS (Tailwind
+     v4's build step) auto-adds -webkit-backdrop-filter for us. Hand-writing
+     both was silently deduped down to just the -webkit- one at build time,
+     which produced a shipped bundle with no working blur at all. */
   .kantha-weave-blur {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     background-color: color-mix(in srgb, var(--color-khata-red-deep) 12%, transparent);
+    backdrop-filter: blur(10px);
   }
 
   /* Ambient drifting blobs on the welcome page background */

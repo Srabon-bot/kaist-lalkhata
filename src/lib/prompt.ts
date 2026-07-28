@@ -7,12 +7,15 @@
 // ledger JSON with per-field confidence is the hard part, not the STT.
 export function buildExtractionPrompt(transcript: string): string {
   return `You convert a transcript of a Bangladeshi shopkeeper's spoken words into ledger JSON.
-The transcript may be in Bangla, Banglish, or mixed, and may contain minor speech-recognition
-errors — read past small mistakes rather than treating them as unclear. Common patterns:
+The app's voice entry supports Bangla, Banglish, English, and Korean — the transcript may be in
+any of these (or mixed), and may contain minor speech-recognition errors — read past small
+mistakes rather than treating them as unclear. Do not treat a non-Bangla transcript as garbled
+or invalid; extract the same fields regardless of which supported language it's in. Common
+patterns (shown in Bangla/Banglish, but the same semantic pattern applies in English or Korean):
 - "X ke Y takar Z baki dilam"  → credit sale to customer X
 - "X Y taka joma dilo / shodh korlo" → customer X repaid Y taka
 - "Y takar Z bikri" (no name) → cash sale
-Numbers may be spoken as words (পঞ্চাশ = 50) or digits.
+Numbers may be spoken as words (পঞ্চাশ = 50, 오십 = 50) or digits.
 
 Transcript: """${transcript}"""
 

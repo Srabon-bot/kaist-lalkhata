@@ -1,86 +1,62 @@
-# লাল খাতা — Lal Khata
+# হাল খাতা — Haal Khata
 
 **Voice-first bookkeeper for Bangladesh's mudi dokans, built with Gemma.**
 
-A shopkeeper taps one mic button, says a transaction out loud in Bangla or
-Banglish ("রহিম ভাইকে ৫০ টাকার ডাল বাকি দিলাম" — *gave Rahim bhai 50 taka of
-lentils on credit*), and Gemma turns it into a structured ledger entry —
-customer, item, amount, cash-or-credit — with no typing and no forms.
+Say a transaction out loud — "রহিম ভাইকে ৫০ টাকার ডাল বাকি দিলাম" (*gave Rahim
+bhai 50 taka of lentils on credit*) — and Gemma turns it into a structured
+ledger entry: customer, item, amount, cash-or-credit. No typing, no forms.
 
-**Live app:** https://lal-khata.vercel.app
-**Model:** `gemma-4-26b-a4b-it` (via the Gemini API)
+**Live app:** https://haal-khata.vercel.app
 
-## Why this exists
+## Why
 
-~4.5 million mudi dokans (neighborhood grocery shops) operate in Bangladesh;
-94% of middle-class households still shop at them, and 73%+ of their sales
-go on credit (*baki*), tracked by hand in a paper ledger. Records get lost,
-disputes happen, and many shopkeepers or their helpers aren't comfortable
-with typing-heavy apps. Lal Khata replaces the pen with a voice.
-
-## Screenshots
-
-| Welcome | Ledger | Confirmation card |
-|---|---|---|
-| _add screenshot_ | _add screenshot_ | _add screenshot_ |
+~4.5 million mudi dokans operate in Bangladesh; 94% of middle-class
+households still shop at them, and 73%+ of sales run on credit (*baki*),
+tracked by hand in a paper ledger prone to disputes and lost records. Haal
+Khata replaces the pen with a voice, in a format shopkeepers already
+recognize — see the in-app "Why Haal Khata?" story for the 430-year-old
+tradition it's named after.
 
 ## How it works
 
-```
-Browser (React + Vite + Tailwind, anime.js)
-  Web Speech API → transcript → /api/gemma (Vercel Edge Function)
-                                     → Gemini API (gemma-4-26b-a4b-it)
-                                     → structured ledger JSON
-  Confirmation card → IndexedDB (Dexie) → Ledger / Customers / Summary UI
-```
-
-- **Speech-to-text:** the browser's native `SpeechRecognition` API (Chrome/
-  Android) transcribes Bangla speech client-side. Gemma's audio input isn't
-  enabled on this project's API key — verified directly against the live
-  Gemini API (`gemma-3n-e2b/e4b-it`, the audio-native models the project
-  originally targeted, are no longer served at all on this key; the
-  available `gemma-4-*-it` models return "Audio input modality is not
-  enabled for this model" for any audio payload). Gemma still does the
-  actual hard part: turning a messy transcript into typed ledger data with
-  per-field confidence scores.
-- **Extraction:** a single Gemma text call per utterance, strict JSON
-  schema, retry-with-repair if the first output isn't valid JSON.
-- **Weekly insight:** a second, independent Gemma call summarizes the
-  week's already-computed totals into one short Bangla observation.
-- **Storage:** IndexedDB only, on-device. No accounts, no backend
-  database — the Sign up / Log in flow stores a display name locally and
-  nothing else.
-- **Key handling:** `GEMINI_API_KEY` is read only inside the serverless
-  proxy (`api/gemma.ts`); the browser never talks to
-  `generativelanguage.googleapis.com` directly.
+- **Entry:** browser speech-to-text → transcript sent to a Gemma proxy
+  (`/api/gemma`, Vercel Edge Function) → structured JSON (type, customer,
+  item, amount, confidence) → a confirmation card before anything's saved.
+- **Offline-first:** every device keeps its own IndexedDB (Dexie) copy —
+  instant reads/writes, fully usable with no connection.
+- **Accounts + sync:** email/password or Google sign-in; a Postgres
+  (Neon) database is the account-wide source of truth every device
+  reconciles against, so the same khata works across a shopkeeper's phone
+  and a helper's phone. Full design in [`PLAN.md`](./PLAN.md).
+- **Rollback, not delete:** entries are soft-deleted so a correction on one
+  device syncs cleanly to every other device instead of just vanishing.
 
 ## Known limitation
 
-`gemma-4-26b-a4b-it` is a "thinking" model — it spends real time on internal
-reasoning before the final answer, pushing measured latency to 15–26s.
-Vercel's Edge Runtime enforces a non-configurable ~25s execution ceiling,
-so the slowest requests occasionally time out and ask the user to retry.
-This is a platform/model constraint, not a bug in the extraction logic —
-retrying almost always succeeds.
+`gemma-4-26b-a4b-it` is a "thinking" model — internal reasoning pushes
+latency to 15–26s, and Vercel's Edge Runtime caps execution at ~25s, so
+the slowest requests occasionally time out and ask the user to retry.
+Platform/model constraint, not a bug — retrying almost always succeeds.
+
+## Tech stack
+
+React 19 · TypeScript · Vite · Tailwind · Dexie (IndexedDB) ·
+react-router-dom · Neon Postgres · Vercel (Edge Functions + hosting) ·
+Gemini API (`gemma-4-26b-a4b-it`)
 
 ## Run it locally
 
 ```bash
 npm install
-cp .env.example .env   # add your GEMINI_API_KEY (from AI Studio)
-vercel dev              # runs the app + the /api/gemma proxy together
+cp .env.example .env   # GEMINI_API_KEY, DATABASE_URL, SESSION_SECRET
+psql $DATABASE_URL -f db/schema.sql
+vercel dev              # app + /api/* routes together
 ```
 
-(Plain `npm run dev` also works for UI-only work, but `/api/*` routes
-only run under `vercel dev`.)
-
-## Tech stack
-
-React 19 · TypeScript · Vite · Tailwind CSS · anime.js v4 · Dexie
-(IndexedDB) · react-router-dom · Vercel (hosting + serverless proxy) ·
-Gemini API (`gemma-4-26b-a4b-it`)
+`npm run dev` also works for UI-only work, but `/api/*` (auth, sync,
+Gemma) only run under `vercel dev`. See [`PLAN.md`](./PLAN.md) for the
+full accounts/sync setup.
 
 ## Team
 
-Made by **Team Xenomorphic**.
-# kaist-lalkhata
+Made by **Team 6** — U222, U224, U202.

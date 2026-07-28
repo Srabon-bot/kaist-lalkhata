@@ -51,31 +51,9 @@ export interface Customer {
   updatedAt: number;
 }
 
-/**
- * An utterance captured while offline, queued for extraction once back
- * online (PRD F8). `transcript` is the legacy Web-Speech-API shape;
- * `audioBase64`/`audioMimeType` are the direct-Gemini-audio experiment's
- * shape (raw recording, extracted+transcribed server-side once back online
- * instead of client-side). Exactly one of the two is set per row — not a
- * strict union because Dexie doesn't index/type non-indexed fields, so this
- * stays a plain optional-fields interface rather than a schema migration.
- */
-export interface PendingRecording {
-  id?: number;
-  transcript?: string;
-  audioBase64?: string;
-  audioMimeType?: string;
-  /** Best-effort browser SpeechRecognition transcript captured alongside the
-   * audio (see useAudioRecorder.ts) — a disambiguation hint only, replayed
-   * along with the audio once back online. */
-  audioTranscriptHint?: string | null;
-  createdAt: number;
-}
-
 class LalKhataDB extends Dexie {
   entries!: EntityTable<LedgerEntry, "id">;
   customers!: EntityTable<Customer, "id">;
-  pendingRecordings!: EntityTable<PendingRecording, "id">;
 
   constructor() {
     super("lal-khata");
@@ -83,6 +61,14 @@ class LalKhataDB extends Dexie {
       entries: "++id, type, customerId, createdAt",
       customers: "++id, &normalizedName, balanceTaka",
     });
+    // v2 added a `pendingRecordings` table for PRD F8 (queue an utterance
+    // recorded offline, extract once back online) — needed only because
+    // extraction used to require a network call to Gemini/Gemma. Local
+    // rule-based extraction (src/lib/localExtraction.ts) has no network
+    // dependency at all, so there's nothing left to queue; queuePendingRecording
+    // and friends were removed. Left as a no-op store (not nulled out) so
+    // existing users' already-created object store doesn't need a
+    // migration of its own — it just sits unused.
     this.version(2).stores({
       pendingRecordings: "++id, createdAt",
     });
@@ -277,22 +263,4 @@ export function computeTotals(entries: LedgerEntry[]): DailyTotals {
     },
     { cashTaka: 0, creditTaka: 0, repaidTaka: 0 },
   );
-}
-
-/** Queues an utterance transcribed while offline for extraction once connectivity returns. */
-export async function queuePendingRecording(transcript: string): Promise<void> {
-  await db.pendingRecordings.add({ transcript, createdAt: Date.now() });
-}
-
-/** Queues a raw recording captured while offline, for direct-Gemini-audio extraction once back online. */
-export async function queuePendingAudioRecording(
-  audioBase64: string,
-  audioMimeType: string,
-  audioTranscriptHint: string | null,
-): Promise<void> {
-  await db.pendingRecordings.add({ audioBase64, audioMimeType, audioTranscriptHint, createdAt: Date.now() });
-}
-
-export async function popOldestPendingRecording(): Promise<PendingRecording | undefined> {
-  return db.pendingRecordings.orderBy("createdAt").first();
 }

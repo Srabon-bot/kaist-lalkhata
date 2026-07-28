@@ -8,7 +8,6 @@ import { LeftLeaf } from "./LeftLeaf";
 import { LangToggle } from "./LangToggle";
 import { HaalKhataRitual } from "./HaalKhataRitual";
 import { EmojiIcon } from "./EmojiIcon";
-import { db, popOldestPendingRecording } from "../lib/db";
 import { initSync, pushToServer } from "../lib/sync";
 import { logout } from "../lib/api";
 import { ENTERED_KEY, SHOP_NAME_KEY, ACCOUNT_ID_KEY } from "../pages/WelcomePage";
@@ -16,43 +15,10 @@ import { useT } from "../lib/i18n";
 
 export function Layout() {
   const [recordOpen, setRecordOpen] = useState(false);
-  const [initialTranscript, setInitialTranscript] = useState<string | null>(null);
-  const [initialAudio, setInitialAudio] = useState<{ base64: string; mimeType: string; transcriptHint: string | null } | null>(
-    null,
-  );
   const [closing, setClosing] = useState(false);
   const [demoRitualOpen, setDemoRitualOpen] = useState(false);
   const navigate = useNavigate();
   const t = useT();
-
-  // PRD F8: utterances transcribed while offline are queued locally; retry
-  // them once we're back online (or on next load), surfacing the
-  // confirmation card for review — never auto-writing a queued entry
-  // without the shopkeeper's OK.
-  useEffect(() => {
-    if (recordOpen) return;
-
-    let cancelled = false;
-    const trySync = async () => {
-      if (!navigator.onLine) return;
-      const next = await popOldestPendingRecording();
-      if (!next || cancelled) return;
-      await db.pendingRecordings.delete(next.id!);
-      if (next.audioBase64 && next.audioMimeType) {
-        setInitialAudio({ base64: next.audioBase64, mimeType: next.audioMimeType, transcriptHint: next.audioTranscriptHint ?? null });
-      } else if (next.transcript) {
-        setInitialTranscript(next.transcript);
-      }
-      setRecordOpen(true);
-    };
-
-    void trySync();
-    window.addEventListener("online", trySync);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("online", trySync);
-    };
-  }, [recordOpen]);
 
   // Layout only mounts once a session has entered (RequireEntered in
   // App.tsx), so this is the right place to wire the connect/close sync
@@ -183,16 +149,7 @@ export function Layout() {
         </div>
       </main>
       <BottomNav onMicClick={() => setRecordOpen(true)} />
-      <RecordFlow
-        open={recordOpen}
-        initialTranscript={initialTranscript}
-        initialAudio={initialAudio}
-        onClose={() => {
-          setRecordOpen(false);
-          setInitialTranscript(null);
-          setInitialAudio(null);
-        }}
-      />
+      <RecordFlow open={recordOpen} onClose={() => setRecordOpen(false)} />
     </div>
   );
 }

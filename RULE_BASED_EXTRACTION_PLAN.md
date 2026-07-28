@@ -149,17 +149,127 @@ Sub-tasks, in order of how load-bearing they are:
 - [x] 2026-07-28: Rollback tag `pre-rule-based-extraction` created and
       pushed, pointing at `7698bc2`.
 - [x] 2026-07-28: This doc written.
-- [ ] Research Bangla number-word system (verify, don't guess).
-- [ ] Research Korean number-word system (verify Sino-Korean vs native for
-      currency, don't guess).
-- [ ] Verify/expand credit-repayment-cash trigger vocabulary per language.
-- [ ] Build common-shop-item translation dictionary (bn/en/ko).
-- [ ] Implement `extractLocally()`.
-- [ ] Wire into `RecordFlow.tsx`, remove/replace Gemini calls in that path.
-- [ ] Test against a real spread of phrasings per language (not just the
-      handful of sample sentences already in the app).
-- [ ] Typecheck/build/lint clean.
-- [ ] Live browser smoke test.
-- [ ] Get explicit go-ahead before committing/pushing (per the "make it
-      revertable, test before shipping" instruction this doc was created
-      under).
+- [x] Researched Bangla number-word system — full irregular 1-99 table in
+      `src/lib/numberWords.ts`, cross-checked against multiple sources.
+- [x] Researched Korean number-word system — confirmed Sino-Korean (not
+      native Korean) is the universal convention for currency amounts.
+      Compositional parser in `src/lib/numberWords.ts`.
+- [x] Credit-repayment-cash trigger vocabulary in `src/lib/localExtraction.ts`
+      (kept the set already validated live against Gemini earlier this
+      session, not re-researched from scratch).
+- [x] Built `src/lib/itemDictionary.ts` — ~65 common mudi-dokan items,
+      bn/en/ko. Out-of-dictionary items fall back to no translation
+      (already-existing `displayItem()` behavior, no new code needed there).
+- [x] Implemented `extractLocally()` in `src/lib/localExtraction.ts`.
+      Per-language positional extraction: Bangla কে/থেকে/টাকার postpositions,
+      English to/from/of/for/worth prepositions + gave/sold verb patterns,
+      Korean 에게/한테/을/를/가/이 particles (token-based, not a whole-string
+      regex — compound names like "라힘 형" need the preceding token, which
+      a naive \S+ regex loses across the space).
+- [x] Wired into `RecordFlow.tsx` — `extractLocally()` replaces
+      `extractFromTranscript`/`extractFromAudio`. `MicRecorder.tsx` reverted
+      to `useSpeechRecognition` (browser STT only, no MediaRecorder/audio
+      blob needed since nothing sends audio anywhere anymore).
+      `useAudioRecorder.ts` deleted (fully superseded). Offline-queue
+      machinery (`PendingRecording`, `queuePendingRecording`,
+      `queuePendingAudioRecording`, `popOldestPendingRecording`, Layout's
+      `online`-event polling) removed — it existed only because extraction
+      used to need a network call; local extraction has none, so voice
+      entry is now fully offline-capable by default, no special-casing
+      needed. `gemmaClient.ts`'s `extractFromTranscript`/`extractFromAudio`
+      and `api/gemma.ts`'s `extract`/`extract-audio` modes were left in
+      place (unused but functional) as a manual escape hatch beyond the git
+      tag, given how much surface area this change touches.
+      **Bug found and fixed during wiring**: `SampleChips` (the "try a
+      sample" tap-to-fill buttons) previously always sent the Bangla sample
+      text regardless of UI language — harmless when Gemini understood any
+      language regardless of the hint, but would have silently broken
+      extraction under the new per-language rule engine (Bangla text run
+      through English-language rules). Now sends `dict[key][lang]`.
+- [x] Tested extensively — first an isolated number-word test (18/18 after
+      fixing two real bugs: a Bangla "দুই হাজার" thousand-multiplier bug, and
+      a Korean place-value double-counting bug), then a full extraction
+      test against all 9 of the app's actual built-in sample sentences (3
+      types × 3 languages) plus additional phrasings — found and fixed 5
+      more real bugs (Bangla "থেকে" self-matching its own কে-suffix check, a
+      Unicode vowel-form mismatch এ vs ে in the possessive-suffix regex,
+      missing ৳-symbol-fused amount parsing, and Korean compound names
+      losing their first word to non-greedy-regex-across-a-space). Ended at
+      11/11 passing including all real sample sentences.
+- [x] Typecheck/build/lint clean throughout.
+- [x] Live browser smoke test: all 9 real sample sentences (not just the
+      unit tests) verified correct in an actual running instance — tapped
+      every sample chip in all three UI languages, confirmed the resulting
+      ConfirmationCard fields, confirmed extraction is now visually instant
+      (no parsing spinner — it's synchronous, no network round trip),
+      confirmed item-translation-on-language-switch still works correctly
+      end-to-end with the new pipeline, confirmed zero console errors.
+- [x] 2026-07-28: Real bug found via live use (screenshot): "সালমা ৪০০
+      টাকার আটা কিনলা" (a cash sale with a bare leading customer name, no
+      কে/থেকে marker) correctly extracted item+amount but left customer
+      null — the leading-name fallback existed but was wrongly scoped to
+      repayment only. Generalized it in all three languages (Bangla/Korean:
+      safe to take "everything before the amount" given their particle-
+      marked, largely head-final grammar; English needed a narrower verb-
+      anchored version instead — English word order puts a verb+object
+      between subject and amount, so blindly taking "everything before the
+      amount" would have swallowed the verb/object too). Added 4 regression
+      cases (the exact failing sentence + its English/Korean analogues +
+      an anonymous-cash-sale case to confirm no false-positive) — 15/15
+      passing.
+- [x] 2026-07-28: Added a short structure-hint line to the mic sheet's idle
+      state (`mic.structureHint` in i18n.tsx) — "say the name first, then
+      the amount and item," localized bn/en/ko. Since this is pattern-
+      matching rather than an LLM, phrasing that roughly follows this order
+      extracts far more reliably; worth surfacing that to the user
+      proactively rather than only after a misfire.
+- [x] 2026-07-28: Robustness pass — researched typo/ASR-error tolerance
+      techniques for rule-based extraction (Damerau-Levenshtein fuzzy
+      matching is the standard approach; confirmed via search, not just
+      assumed) and combined that with a systematic self-audit of the
+      engine's known-brittle spots. Found and fixed 7 more real bugs:
+      1. **Bangla compound numbers**: "এক হাজার দুইশ পঞ্চাশ" (1250) came
+         back as 250 — the amount parser returned on the first
+         magnitude-word match instead of chaining thousand+hundred+
+         remainder. Restructured into `parseBnSubThousand()` + a
+         thousand-level wrapper in `numberWords.ts`.
+      2. **Bangla কে-suffix false positives, generalized**: not just থেকে —
+         "আজকে" (today) and Bangla pronouns ("তাকে"=him/her, "আমাকে"=me,
+         etc.) all coincidentally end in the same কে dative marker used
+         for names. Was a one-off exclusion for থেকে; turned into a real
+         stoplist (`BN_NON_NAME_KE_WORDS`) after confirming the failure
+         mode wasn't থেকে-specific.
+      3. **Filler words polluting the "leading name" fallback**: "আজকে
+         সালমা কিনলো"/"So Karim bought..." both included the filler word
+         in the customer field. Added `LEADING_FILLERS` (bn/en/ko) that
+         trims known discourse/time words (and, for Bangla, reuses the
+         পronoun stoplist from #2) before taking the leading span.
+      4. **English trigger words didn't match inflections**: exact `\bword\b`
+         boundary matching missed "credited"/"owes" (word-boundary
+         requires the match to END right at the trigger, not just start
+         there). Switched English trigger matching to per-token prefix
+         matching.
+      5. **No typo/mishearing tolerance at all**: added a Damerau-
+         Levenshtein-lite fallback (`withinEditDistance1` — handles
+         substitution, insertion/deletion, AND adjacent transposition,
+         e.g. "credti") as a last-resort tier after exact/prefix matching,
+         for Bangla and English (skipped for Korean — its particles attach
+         to larger tokens without spaces, so whole-token edit-distance
+         doesn't apply the same way there).
+      6. **"owes" missing from the English customer-fallback verb list**:
+         "Rahim owes 300 taka for oil" is an entirely ordinary way to
+         state a credit sale; added to the verb-anchor list alongside
+         bought/sold/gave/etc.
+      Added 6 new regression cases covering all of these — 21/21 extraction
+      cases and 20/20 number-word cases passing after the fixes.
+      **Known, accepted remaining limitation**: one adversarial case I
+      constructed myself ("Gave Karim ৳200 of rice, credited to his
+      account" — an unrelated trailing "to" clause preempts the more
+      specific "Gave NAME" pattern) is not fixed. It's contrived, not from
+      real reported use, and a targeted fix risked destabilizing the
+      already-tuned branch-priority logic for real cases — documented here
+      rather than chased. This is the honest shape of "foolproof" for a
+      pattern-matching engine: meaningfully hardened against real failure
+      modes, not literally immune to every possible phrasing.
+- [ ] **Still not committed/pushed** — holding for explicit go-ahead before
+      shipping, given how much this touches. Ask before committing.

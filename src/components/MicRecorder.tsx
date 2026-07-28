@@ -1,16 +1,12 @@
 import { useEffect, useRef } from "react";
 import { animate, type JSAnimation } from "animejs";
-import { useAudioRecorder } from "../hooks/useAudioRecorder";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { EmojiIcon } from "./EmojiIcon";
 import { MAX_RECORDING_SECONDS } from "../config";
 import { dict, useLang, useT, type DictKey } from "../lib/i18n";
 
 interface MicRecorderProps {
-  /** A real mic recording, ready to send straight to Gemini as audio. transcriptHint is the
-   * live browser SpeechRecognition transcript (best-effort — null if unsupported/failed). */
-  onAudioRecorded: (audioBase64: string, mimeType: string, transcriptHint: string | null) => void;
-  /** A sample-chip tap (no audio available) — goes through the text extraction path. */
-  onSampleText: (transcript: string) => void;
+  onRecorded: (transcript: string) => void;
   disabled?: boolean;
 }
 
@@ -19,18 +15,18 @@ function prefersReducedMotion(): boolean {
 }
 
 // Lets someone who can't speak Bangla still trigger the real extraction
-// pipeline end-to-end — taps go through onSampleText (the text-extraction
-// path), no mic or audio required.
+// pipeline end-to-end — taps feed straight into the same onRecorded
+// callback a finished voice recording would, no mic required.
 const SAMPLES: { transcriptKey: DictKey; glossKey: DictKey }[] = [
   { transcriptKey: "mic.sampleCreditSale", glossKey: "type.creditSale" },
   { transcriptKey: "mic.sampleCashSale", glossKey: "type.cashSale" },
   { transcriptKey: "mic.sampleRepayment", glossKey: "type.repayment" },
 ];
 
-export function MicRecorder({ onAudioRecorded, onSampleText, disabled }: MicRecorderProps) {
+export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
   const t = useT();
   const { lang } = useLang();
-  const { status, interimText, elapsedSeconds, start, stop, cancel } = useAudioRecorder(onAudioRecorded, lang);
+  const { status, elapsedSeconds, interimText, start, stop, cancel } = useSpeechRecognition(onRecorded, lang);
   const micButtonRef = useRef<HTMLButtonElement>(null);
   const pulseRef = useRef<JSAnimation | null>(null);
 
@@ -77,7 +73,7 @@ export function MicRecorder({ onAudioRecorded, onSampleText, disabled }: MicReco
         <p className="max-w-xs text-center font-bangla text-sm text-khata-red" role="alert">
           {t("mic.unsupported")}
         </p>
-        <SampleChips onPick={onSampleText} t={t} />
+        <SampleChips onPick={onRecorded} t={t} />
       </div>
     );
   }
@@ -133,8 +129,12 @@ export function MicRecorder({ onAudioRecorded, onSampleText, disabled }: MicReco
         </button>
         <p className="font-bangla text-sm text-ink/70">{t("mic.tapToSpeak")}</p>
         <p className="font-bangla text-xs text-ink/50">{t("mic.speakInLang")}</p>
+        <div className="flex w-full max-w-[260px] flex-col gap-1 rounded-xl bg-rule-blue/10 px-3 py-2 text-center">
+          <p className="font-bangla text-xs font-medium text-rule-blue">{t("mic.structureHintSale")}</p>
+          <p className="font-bangla text-xs font-medium text-rule-blue">{t("mic.structureHintRepayment")}</p>
+        </div>
       </div>
-      <SampleChips onPick={onSampleText} t={t} />
+      <SampleChips onPick={onRecorded} t={t} />
     </div>
   );
 }
@@ -146,15 +146,21 @@ function SampleChips({ onPick, t }: { onPick: (transcript: string) => void; t: (
       <p className="font-bangla text-xs text-ink/50">{t("mic.orTrySample")}</p>
       <div className="flex flex-col gap-1.5 self-stretch">
         {SAMPLES.map((s) => {
-          // Always send the Bangla transcript — that's what the real voice
-          // pipeline produces and what Gemma is tuned to parse. In English
-          // mode we still show a gloss underneath so the tap is legible.
           const bnTranscript = dict[s.transcriptKey].bn;
+          // Send the sample in the CURRENT UI language, not always Bangla —
+          // extractLocally() (src/lib/localExtraction.ts) has per-language
+          // grammar rules (e.g. Bangla কে/টাকার postpositions vs Korean
+          // 에게/를 particles vs English to/from/worth), so the text sent
+          // has to actually match the language extraction will run as. This
+          // differs from the old Gemini-based extraction, which understood
+          // any of the three languages regardless of what lang hint was
+          // passed, so "always send Bangla" happened to work there.
+          const sampleTranscript = dict[s.transcriptKey][lang];
           return (
             <button
               key={s.transcriptKey}
               type="button"
-              onClick={() => onPick(bnTranscript)}
+              onClick={() => onPick(sampleTranscript)}
               className="rounded-xl border border-ink/10 bg-page-cream px-3 py-2 text-left transition-colors active:bg-ink/5"
             >
               <span className="mr-1.5 rounded-full bg-khata-red/10 px-2 py-0.5 font-bangla text-[10px] font-semibold text-khata-red">

@@ -1,57 +1,31 @@
 import { useEffect, useRef, useState } from "react";
 import { animate } from "animejs";
 import { MicRecorder } from "./MicRecorder";
-import { ParsingIndicator } from "./ParsingIndicator";
 import { ConfirmationCard, type EditedEntry } from "./ConfirmationCard";
-import { EmojiIcon } from "./EmojiIcon";
-import { extractFromTranscript, extractFromAudio, GemmaError } from "../lib/gemmaClient";
-import { recordEntry, queuePendingRecording, queuePendingAudioRecording } from "../lib/db";
+import { extractLocally } from "../lib/localExtraction";
+import { recordEntry } from "../lib/db";
 import type { ExtractionResult } from "../lib/schema";
-import { useT, useLang, type DictKey } from "../lib/i18n";
+import { useT, useLang } from "../lib/i18n";
 
-type Phase = "capture" | "parsing" | "confirm" | "error" | "queued";
-
-interface PendingAudio {
-  base64: string;
-  mimeType: string;
-  transcriptHint: string | null;
-}
+type Phase = "capture" | "confirm" | "error";
 
 interface RecordFlowProps {
   open: boolean;
   onClose: () => void;
-  /** A previously-queued offline utterance to process immediately on open. */
-  initialTranscript?: string | null;
-  /** A previously-queued offline recording to process immediately on open. */
-  initialAudio?: PendingAudio | null;
 }
-
-const ERROR_COPY: Record<GemmaError["kind"], DictKey> = {
-  network: "error.network",
-  timeout: "error.timeout",
-  server: "error.server",
-  invalid_json: "error.invalidJson",
-};
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-type PendingPayload =
-  | { kind: "text"; transcript: string }
-  | { kind: "audio"; base64: string; mimeType: string; transcriptHint: string | null };
-
-export function RecordFlow({ open, onClose, initialTranscript, initialAudio }: RecordFlowProps) {
+export function RecordFlow({ open, onClose }: RecordFlowProps) {
   const t = useT();
   const { lang } = useLang();
   const [mounted, setMounted] = useState(open);
   const [phase, setPhase] = useState<Phase>("capture");
   const [result, setResult] = useState<ExtractionResult | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const lastPayloadRef = useRef<PendingPayload | null>(null);
+  const lastTranscriptRef = useRef<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const processedInitialRef = useRef<string | null>(null);
-  const processedInitialAudioRef = useRef<PendingAudio | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const errorBoxRef = useRef<HTMLDivElement>(null);
@@ -59,8 +33,7 @@ export function RecordFlow({ open, onClose, initialTranscript, initialAudio }: R
   const reset = () => {
     setPhase("capture");
     setResult(null);
-    setErrorMessage("");
-    lastPayloadRef.current = null;
+    lastTranscriptRef.current = null;
   };
 
   const handleClose = () => {
@@ -111,53 +84,20 @@ export function RecordFlow({ open, onClose, initialTranscript, initialAudio }: R
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mounted]);
 
-  const runTextExtraction = async (transcript: string) => {
-    lastPayloadRef.current = { kind: "text", transcript };
-
-    if (!navigator.onLine) {
-      await queuePendingRecording(transcript);
-      setPhase("queued");
-      return;
-    }
-
-    setPhase("parsing");
+  // Local rule-based extraction (src/lib/localExtraction.ts) — no network
+  // call, so this always succeeds structurally (worst case: type
+  // "unclear"). The try/catch is just a safety net against an unexpected
+  // exception, not a real error-handling path the way the old
+  // Gemini-backed version needed (network/timeout/quota failures don't
+  // apply anymore — see RULE_BASED_EXTRACTION_PLAN.md).
+  const runExtraction = (transcript: string) => {
+    lastTranscriptRef.current = transcript;
     try {
-      const extracted = await extractFromTranscript(transcript);
-      setResult(extracted);
+      setResult(extractLocally(transcript, lang));
       setPhase("confirm");
-    } catch (err) {
-      const kind = err instanceof GemmaError ? err.kind : "server";
-      setErrorMessage(t(ERROR_COPY[kind]));
+    } catch {
       setPhase("error");
     }
-  };
-
-  const runAudioExtraction = async (base64: string, mimeType: string, transcriptHint: string | null) => {
-    lastPayloadRef.current = { kind: "audio", base64, mimeType, transcriptHint };
-
-    if (!navigator.onLine) {
-      await queuePendingAudioRecording(base64, mimeType, transcriptHint);
-      setPhase("queued");
-      return;
-    }
-
-    setPhase("parsing");
-    try {
-      const extracted = await extractFromAudio(base64, mimeType, lang, transcriptHint);
-      setResult(extracted);
-      setPhase("confirm");
-    } catch (err) {
-      const kind = err instanceof GemmaError ? err.kind : "server";
-      setErrorMessage(t(ERROR_COPY[kind]));
-      setPhase("error");
-    }
-  };
-
-  const retryLastPayload = () => {
-    const payload = lastPayloadRef.current;
-    if (!payload) return;
-    if (payload.kind === "text") void runTextExtraction(payload.transcript);
-    else void runAudioExtraction(payload.base64, payload.mimeType, payload.transcriptHint);
   };
 
   useEffect(() => {
@@ -171,22 +111,6 @@ export function RecordFlow({ open, onClose, initialTranscript, initialAudio }: R
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  useEffect(() => {
-    if (!open || !initialTranscript) return;
-    if (processedInitialRef.current === initialTranscript) return;
-    processedInitialRef.current = initialTranscript;
-    void runTextExtraction(initialTranscript);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialTranscript]);
-
-  useEffect(() => {
-    if (!open || !initialAudio) return;
-    if (processedInitialAudioRef.current === initialAudio) return;
-    processedInitialAudioRef.current = initialAudio;
-    void runAudioExtraction(initialAudio.base64, initialAudio.mimeType, initialAudio.transcriptHint);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialAudio]);
 
   // A single gentle shake on arrival at the error state — never looping
   // (PRD §5.4: "gentle single shake / fade-in, nothing looping").
@@ -233,36 +157,20 @@ export function RecordFlow({ open, onClose, initialTranscript, initialAudio }: R
 
         {phase === "capture" && (
           <div className="flex justify-center pb-2">
-            <MicRecorder onAudioRecorded={runAudioExtraction} onSampleText={runTextExtraction} />
+            <MicRecorder onRecorded={runExtraction} />
           </div>
         )}
-
-        {phase === "parsing" && <ParsingIndicator />}
 
         {phase === "confirm" && result && (
           <ConfirmationCard result={result} onConfirm={handleConfirm} onReRecord={reset} />
         )}
 
-        {phase === "queued" && (
-          <div className="flex flex-col items-center gap-4 py-4 text-center" role="status" aria-live="polite">
-            <EmojiIcon src="mail.png" size={30} />
-            <p className="font-bangla text-lg font-semibold text-ink">{t("record.offline")}</p>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-full bg-rule-blue px-6 py-3 font-bangla font-semibold text-white"
-            >
-              {t("record.ok")}
-            </button>
-          </div>
-        )}
-
         {phase === "error" && (
           <div ref={errorBoxRef} className="flex flex-col items-center gap-4 py-4 text-center" role="alert">
-            <p className="font-bangla text-lg font-semibold text-khata-red">{errorMessage}</p>
+            <p className="font-bangla text-lg font-semibold text-khata-red">{t("error.server")}</p>
             <button
               type="button"
-              onClick={retryLastPayload}
+              onClick={() => lastTranscriptRef.current && runExtraction(lastTranscriptRef.current)}
               className="rounded-full bg-khata-red px-6 py-3 font-bangla font-semibold text-white"
             >
               {t("common.tryAgain")}

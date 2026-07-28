@@ -130,6 +130,23 @@ export const dict = {
 
   "mic.tapToSpeak": { bn: "কথা বলতে চাপুন", en: "Tap to speak", ko: "눌러서 말하기" },
   "mic.speakInLang": { bn: "বাংলায় বলুন", en: "Speak in English", ko: "한국어로 말하세요" },
+  // Structure hints (PRD-adjacent addition) — the extraction is rule-based,
+  // not an LLM (see src/lib/localExtraction.ts), so it reads much more
+  // reliably when the shopkeeper's phrasing roughly follows this order.
+  // Split in two: credit/cash sales have an item, repayment never does
+  // (ConfirmationCard hides the item field entirely for repayment), so one
+  // combined hint would either be wrong for repayment or too vague for
+  // sales — plain language, no grammar jargon either way.
+  "mic.structureHintSale": {
+    bn: "বাকি/নগদ বিক্রি: নাম, তারপর কত টাকার কী",
+    en: "Credit/cash sale: name, then the amount and item",
+    ko: "외상/현금 판매: 이름, 그다음 금액과 물건",
+  },
+  "mic.structureHintRepayment": {
+    bn: "বাকি শোধ: শুধু নাম আর টাকা",
+    en: "Repayment: just the name and amount",
+    ko: "외상 상환: 이름과 금액만",
+  },
   "mic.requesting": { bn: "অনুমতি চাওয়া হচ্ছে...", en: "Requesting permission...", ko: "권한을 요청하는 중..." },
   "mic.listening": { bn: "শুনছি...", en: "Listening...", ko: "듣는 중..." },
   "mic.secondsLeft": { bn: "সেকেন্ড বাকি", en: "seconds left", ko: "초 남음" },

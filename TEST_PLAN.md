@@ -17,8 +17,9 @@ desktop Chrome vs. a phone.
 | # | Step | Expected | Result |
 |---|------|----------|--------|
 | 1.1 | Open https://haal-khata.vercel.app on a fresh/incognito browser | Welcome page loads, shows Bangla by default, no console errors | |
-| 1.2 | Tap the language toggle (top right) | Cycles between বাংলা / English / 한국어, all visible text switches language immediately | |
-| 1.3 | Reload the page | Chosen language persists | |
+| 1.2 | Look at the background behind the red book | Festive scene (lanterns/bunting/lotus/mandala) is visibly **blurred/softened**, not sharp — eye should land on the book, not the background | |
+| 1.3 | Tap the language toggle (top right) | Cycles between বাংলা / English / 한국어, all visible text switches language immediately | |
+| 1.4 | Reload the page | Chosen language persists | |
 
 ## 2. Sign up (email/password)
 
@@ -46,8 +47,8 @@ desktop Chrome vs. a phone.
 
 | # | Step | Expected | Result |
 |---|------|----------|--------|
-| 4.1 | Log out, tap "Continue with Google" | Google account picker popup opens (no "not set up yet" message) | ✅ (already confirmed working per your message) |
-| 4.2 | Pick your Google account and consent | Redirects back into the app; if this Google account has never signed in before, shows the username modal | |
+| 4.1 | Log out, tap "Continue with Google" | Google account picker popup opens (no "not set up yet" message) | ✅ (confirmed working) |
+| 4.2 | Pick your Google account and consent | Redirects back into the app; if this Google account has never signed in before, shows the username modal | ✅ (confirmed working) |
 | 4.3 | Log out and sign in with Google again | Skips straight into the app (no username prompt second time) | |
 
 ## 5. Adding ledger entries — voice
@@ -91,45 +92,62 @@ desktop Chrome vs. a phone.
 | 9.2 | Open Summary page | Shows correct aggregate totals: cash sales, credit sales, repayments | |
 | 9.3 | Confirm rolled-back entries from step 8 do **not** appear in History or count in Summary | | |
 
-## 10. Export / share
+## 10. Book layout consistency (recent fix — please pay extra attention here)
 
 | # | Step | Expected | Result |
 |---|------|----------|--------|
-| 10.1 | Export ledger as CSV | Downloads a CSV with correct entries/amounts/customers | |
-| 10.2 | Use the "share card" feature (if present in UI) | Opens native share sheet (mobile) or downloads an image/card | |
+| 10.1 | On a wide/desktop-width browser window, open Khata (home), Customers, Summary, and History in turn | The book — the red cover/spine panel on the left plus the cream page card on the right — is the **exact same size** on every page, regardless of how much content each page has | |
+| 10.2 | Specifically open Summary with several customers owing money (so "Highest outstanding credit" has multiple rows) | The book does **not** grow taller than the other pages — if the content is too tall to fit, only the cream page card scrolls internally (you'll see a scrollbar inside the card), the book/cover stays fixed | |
+| 10.3 | Scroll down inside a tall Summary page | Content scrolls smoothly inside the page card; the red cover/spine panel next to it does not move or resize | |
+| 10.4 | Repeat 10.1–10.3 on a phone-width screen | Same idea (fixed page height, internal scroll if content overflows) — cover/spine panel is expected to be hidden on mobile width, that's normal | |
 
-## 11. Offline behavior
-
-| # | Step | Expected | Result |
-|---|------|----------|--------|
-| 11.1 | Turn on Airplane mode / disconnect network | App still opens and shows previously loaded data (PWA/offline cache) | |
-| 11.2 | While offline, add a new entry | Saves locally without error | |
-| 11.3 | Reconnect to the internet | Entry automatically syncs to the server (no manual "sync" button needed) — check by reloading | |
-
-## 12. Cross-device sync (the main new feature)
+## 11. "Why Haal Khata?" story content
 
 | # | Step | Expected | Result |
 |---|------|----------|--------|
-| 12.1 | On Device/Browser A, log in and add a new entry (note the exact customer name + amount) | Entry visible on Device A | |
-| 12.2 | On a **second** device or a different browser (e.g. Chrome + Firefox, or your phone), log in with the **same account** | That same entry (from 12.1) appears automatically after login | |
-| 12.3 | Add a **different** entry on Device B | Switch back to Device A, reload — the new entry from Device B appears | |
-| 12.4 | Roll back an entry on Device A | Reload Device B — that entry is gone there too | |
-| 12.5 | On Device A and Device B **simultaneously offline**, each create a customer with the exact same name (e.g. "Karim") | Bring both online — check Customers list: do they merge into one customer or does it error? Note what happened | |
+| 11.1 | On the Welcome page, tap "কেন \"হাল খাতা\"?" (why Haal Khata) | A modal opens with 4 paragraphs of history — Mughal-era origins, the red-cloth ledger and its trust/religious significance, the Pohela Boishakh customer ritual, and how the app carries that tradition forward | |
+| 11.2 | Switch language inside that modal to English, then Korean | All 4 paragraphs translate correctly and read naturally in each language (Korean version includes brief glosses like "무굴 황제 아크바르(Akbar)" for readers unfamiliar with the history) | |
+| 11.3 | Scroll the story modal if content overflows | Scrolls smoothly inside the modal card | |
 
-## 13. Session security spot-checks
+## 12. Export / share
 
 | # | Step | Expected | Result |
 |---|------|----------|--------|
-| 13.1 | Open browser dev tools → Application → Cookies, find `hk_session` | Cookie is marked `HttpOnly` and `Secure` (not readable by page JS, not sent over plain HTTP) | |
-| 13.2 | Try visiting the app over `http://` (not https) if possible, or just confirm the URL bar always shows the padlock/https | Always HTTPS | |
+| 12.1 | Export ledger as CSV | Downloads a CSV with correct entries/amounts/customers | |
+| 12.2 | Use the "share card" feature (if present in UI) | Opens native share sheet (mobile) or downloads an image/card | |
 
-## 14. General polish
+## 13. Offline behavior
 
 | # | Step | Expected | Result |
 |---|------|----------|--------|
-| 14.1 | Resize browser window very small (phone width) and very large (desktop) | Layout stays usable, nothing overlaps/cuts off | |
-| 14.2 | "Install app" / Add to Home Screen (PWA) on mobile | Installs and opens like a native app | |
-| 14.3 | Check glossary tooltips (e.g. term explanations like "mudi dokan", "taka") | Tooltips/definitions show correctly in the current language | |
+| 13.1 | Turn on Airplane mode / disconnect network | App still opens and shows previously loaded data (PWA/offline cache) | |
+| 13.2 | While offline, add a new entry | Saves locally without error | |
+| 13.3 | Reconnect to the internet | Entry automatically syncs to the server (no manual "sync" button needed) — check by reloading | |
+
+## 14. Cross-device sync (the main new feature)
+
+| # | Step | Expected | Result |
+|---|------|----------|--------|
+| 14.1 | On Device/Browser A, log in and add a new entry (note the exact customer name + amount) | Entry visible on Device A | |
+| 14.2 | On a **second** device or a different browser (e.g. Chrome + Firefox, or your phone), log in with the **same account** | That same entry (from 14.1) appears automatically after login | |
+| 14.3 | Add a **different** entry on Device B | Switch back to Device A, reload — the new entry from Device B appears | |
+| 14.4 | Roll back an entry on Device A | Reload Device B — that entry is gone there too | |
+| 14.5 | On Device A and Device B **simultaneously offline**, each create a customer with the exact same name (e.g. "Karim") | Bring both online — check Customers list: do they merge into one customer or does it error? Note what happened | |
+
+## 15. Session security spot-checks
+
+| # | Step | Expected | Result |
+|---|------|----------|--------|
+| 15.1 | Open browser dev tools → Application → Cookies, find `hk_session` | Cookie is marked `HttpOnly` and `Secure` (not readable by page JS, not sent over plain HTTP) | |
+| 15.2 | Try visiting the app over `http://` (not https) if possible, or just confirm the URL bar always shows the padlock/https | Always HTTPS | |
+
+## 16. General polish
+
+| # | Step | Expected | Result |
+|---|------|----------|--------|
+| 16.1 | Resize browser window very small (phone width) and very large (desktop) | Layout stays usable, nothing overlaps/cuts off | |
+| 16.2 | "Install app" / Add to Home Screen (PWA) on mobile | Installs and opens like a native app | |
+| 16.3 | Check glossary tooltips (e.g. term explanations like "mudi dokan", "taka") | Tooltips/definitions show correctly in the current language | |
 
 ---
 

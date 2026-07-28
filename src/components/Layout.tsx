@@ -78,12 +78,17 @@ export function Layout() {
       {/* Demo-only shortcut: opens the Haal Khata ritual from anywhere,
           without navigating to Summary first. Sits outside the book itself
           (fixed to the viewport, not the page spread) so it's always
-          reachable mid-demo. */}
+          reachable mid-demo. Anchored left on mobile — below md the app fills
+          the full viewport width, so a right-anchored fixed button would sit
+          exactly on top of BookPage's own top-right LangToggle/logout row;
+          top-left is empty at every width, so it never collides there. From
+          md up the app is centered with real margin to its right, which is
+          where this reads best next to the book. */}
       <button
         type="button"
         onClick={() => setDemoRitualOpen(true)}
         aria-label={t("ritual.button")}
-        className="fixed right-3 top-3 z-40 flex items-center gap-1 rounded-full bg-khata-red px-3 py-1.5 font-bangla text-xs font-semibold text-white shadow-lg"
+        className="fixed left-3 top-3 z-40 flex items-center gap-1 rounded-full bg-khata-red px-3 py-1.5 font-bangla text-xs font-semibold text-white shadow-lg md:left-auto md:right-3"
       >
         <EmojiIcon src="lamp.png" size={12} />
         {t("ritual.button")}

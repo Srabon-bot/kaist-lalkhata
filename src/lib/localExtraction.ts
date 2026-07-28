@@ -278,9 +278,38 @@ function extractEn(text: string, type: ExtractionType): { customer: string | nul
   const worthIdx = lower.indexOf("worth");
   const forIdx = lower.indexOf("for");
   const ofIdx = lower.indexOf("of");
-  if (soldIdx >= 0 && worthIdx > soldIdx) {
-    item = captureRun(tokens, soldIdx + 1, worthIdx - soldIdx - 1);
+  const amountIdx = lower.findIndex((t) => /\d/.test(t));
+  const verbAnchorIdx = lower.findIndex(
+    (t) => ["bought", "purchased", "paid", "received", "gave", "sold"].includes(t) || t.startsWith("owe"),
+  );
+  if (worthIdx >= 0) {
+    // "worth" unambiguously marks "ITEM worth AMOUNT" regardless of which
+    // verb precedes it (sold/bought/purchased/received/...) — checked
+    // first and independent of "for" since "for" is a homophone of "four"
+    // and can get ASR-mangled ("for 500" heard as "four 500"), silently
+    // breaking the forIdx-based branches below. "worth" has no such
+    // homophone risk, so it's the anchor the in-app hint now recommends.
+    const anchor = soldIdx >= 0 && soldIdx < worthIdx ? soldIdx : verbAnchorIdx >= 0 && verbAnchorIdx < worthIdx ? verbAnchorIdx : -1;
+    const start = anchor >= 0 ? anchor + 1 : 0;
+    const boundary = [toIdx, fromIdx].filter((i) => i > start && i < worthIdx);
+    const end = boundary.length ? Math.min(...boundary) : worthIdx;
+    const span = tokens.slice(start, end).filter((t) => !EN_STOPWORDS.has(t.toLowerCase()));
+    item = span.length ? span.join(" ") : null;
     itemConfidence = item ? 1.0 : 0;
+  } else if (forIdx >= 0 && amountIdx === forIdx + 1) {
+    // "X bought/sold ITEM for AMOUNT" — "for" sits right before the amount
+    // here, not the item, so the item is the span before "for" instead
+    // (found live: "rohim bought biscuits for 500" left item empty because
+    // captureRun-after-"for" hit the digit "500" immediately and bailed).
+    // Bounded by the verb (skip "bought"/"sold" itself) and by any
+    // to/from customer marker, so "sold rice to Rahim for 200" doesn't
+    // swallow "Rahim" into the item span.
+    const start = verbAnchorIdx >= 0 && verbAnchorIdx < forIdx ? verbAnchorIdx + 1 : 0;
+    const boundary = [toIdx, fromIdx].filter((i) => i > start && i < forIdx);
+    const end = boundary.length ? Math.min(...boundary) : forIdx;
+    const span = tokens.slice(start, end).filter((t) => !EN_STOPWORDS.has(t.toLowerCase()));
+    item = span.length ? span.join(" ") : null;
+    itemConfidence = item ? 0.9 : 0;
   } else if (forIdx >= 0) {
     item = captureRun(tokens, forIdx + 1, 2);
     itemConfidence = item ? 1.0 : 0;

@@ -139,12 +139,18 @@ export const dict = {
   // sales — plain language, no grammar jargon either way.
   "mic.structureHintSale": {
     bn: "বাকি/নগদ বিক্রি: নাম, তারপর কত টাকার কী",
-    en: "Credit/cash sale: name, then the amount and item",
+    // English extraction is verb-anchored, not word-order-anchored like
+    // bn/ko (no particles to mark "this is the name") — a bare "name,
+    // amount, item" utterance has no verb for it to lock onto, so the hint
+    // has to ask for an actual sentence instead of the bn/ko-style shorthand.
+    // "worth" rather than "for" — "for" sounds like "four" and can get
+    // misheard by speech recognition, silently dropping the item.
+    en: 'Say a full sentence, e.g. "Rohim bought biscuits worth 500 taka"',
     ko: "외상/현금 판매: 이름, 그다음 금액과 물건",
   },
   "mic.structureHintRepayment": {
     bn: "বাকি শোধ: শুধু নাম আর টাকা",
-    en: "Repayment: just the name and amount",
+    en: 'Say a full sentence, e.g. "Salma paid back 200 taka"',
     ko: "외상 상환: 이름과 금액만",
   },
   "mic.requesting": { bn: "অনুমতি চাওয়া হচ্ছে...", en: "Requesting permission...", ko: "권한을 요청하는 중..." },

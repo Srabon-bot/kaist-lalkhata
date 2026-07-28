@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { animate, stagger } from "animejs";
-import { db, repayBaki, type Customer } from "../lib/db";
+import { db, repayBaki, startNewYear, type Customer } from "../lib/db";
 import { formatTaka, numeralStyleForLang } from "../lib/numerals";
 import { generateDuesReceiptBlob, shareOrDownloadCard } from "../lib/shareCard";
 import { SHOP_NAME_KEY } from "../pages/WelcomePage";
@@ -28,8 +28,11 @@ const SWEETS = [
  * named after: shopkeepers invite customers to settle their baki, then
  * start the new year fresh. "Settling" here calls the same repayBaki used
  * everywhere else in the app (a real recorded repayment, not a silent
- * data wipe) — nothing about a customer's history is deleted, this is just
- * that ritual's moment of "who's paid up" made explicit.
+ * data wipe). Finishing the ritual calls startNewYear(), which archives the
+ * book's entries (soft delete, same mechanism as rollbackEntry) so the
+ * daily/weekly/history views come up empty — but customer balances carry
+ * over untouched, so anyone still owing baki isn't forgotten just because
+ * the book turned a page.
  */
 export function HaalKhataRitual({ onClose }: { onClose: () => void }) {
   const t = useT();
@@ -75,6 +78,11 @@ export function HaalKhataRitual({ onClose }: { onClose: () => void }) {
     } finally {
       setBusyId(null);
     }
+  };
+
+  const handleFinish = async () => {
+    await startNewYear();
+    setCelebrating(true);
   };
 
   return (
@@ -141,7 +149,7 @@ export function HaalKhataRitual({ onClose }: { onClose: () => void }) {
 
             <button
               type="button"
-              onClick={() => setCelebrating(true)}
+              onClick={handleFinish}
               className="mt-3 shrink-0 rounded-full bg-khata-red px-6 py-3 font-bangla font-semibold text-white"
             >
               {t("ritual.finish")}

@@ -198,6 +198,22 @@ export async function rollbackEntry(entryId: number): Promise<void> {
   });
 }
 
+/** The Haal Khata ritual's "start the new year" moment: archives every live
+ * entry via the same soft-delete rollbackEntry uses, so the book's
+ * daily/weekly/history views come up empty for the fresh year. Customer
+ * balances are left untouched — a settled customer is already back to zero
+ * from repayBaki, and anyone still owing carries that baki into the new
+ * book, exactly like the real ritual (this is why it's a soft delete, not a
+ * hard wipe: the old book's entries stay around to sync/reconcile, they're
+ * just no longer shown as the live ledger). */
+export async function startNewYear(): Promise<void> {
+  const now = Date.now();
+  await db.transaction("rw", db.entries, async () => {
+    const liveEntries = await db.entries.filter(isLive).toArray();
+    await db.entries.bulkUpdate(liveEntries.map((e) => ({ key: e.id!, changes: { deletedAt: now } })));
+  });
+}
+
 export function startOfThisYear(): number {
   const d = new Date();
   d.setMonth(0, 1);

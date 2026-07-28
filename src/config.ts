@@ -20,7 +20,17 @@ export const GEMMA_MODEL = "gemma-4-26b-a4b-it";
 // can't silently drift under us mid-demo. Lets a recording skip the
 // browser Web-Speech transcription step entirely: raw audio goes straight
 // to Gemini, which transcribes AND extracts ledger JSON in one call.
-export const GEMINI_AUDIO_MODEL = "gemini-3.5-flash";
+//
+// Switched from gemini-3.5-flash to gemini-3.6-flash after the live site
+// started 429ing mid-demo — turned out gemini-3.5-flash's free-tier quota
+// on this project is a hard 20 requests/DAY (not per-minute), which normal
+// testing burns through fast. gemini-3.6-flash's quota is separate (scoped
+// per-model-per-project) and untouched. If this model also gets exhausted,
+// same fix again: check the exact quotaId in the 429 body against
+// https://ai.dev/rate-limit and swap to another model with headroom — or
+// enable billing on the project to remove free-tier caps entirely, which is
+// the only fix that doesn't eventually hit this same wall again.
+export const GEMINI_AUDIO_MODEL = "gemini-3.6-flash";
 
 export const GEMMA_PROXY_ENDPOINT = "/api/gemma";
 

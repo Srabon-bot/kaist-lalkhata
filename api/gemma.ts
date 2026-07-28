@@ -157,16 +157,16 @@ export default async function handler(req: Request): Promise<Response> {
           contents: [{ parts }],
           generationConfig: {
             temperature: 0.2,
-            // Real Gemini models (unlike Gemma here) accept thinkingConfig.
-            // Measured live: this extraction task doesn't need "thinking" —
-            // 303 thought tokens saved per call with identical accuracy on
-            // the cases tested, vs. gemma-4's fixed thinking overhead.
-            thinkingConfig: { thinkingBudget: 0 },
+            // thinkingConfig.thinkingBudget=0 previously used here to skip
+            // "thinking" tokens — worked on gemini-3.5-flash (verified live,
+            // 303 thought tokens saved/call) but throws 400 INVALID_ARGUMENT
+            // on gemini-3.6-flash (verified live too — not a universal
+            // Gemini feature, model-specific). Dropped after that broke the
+            // live site on a model switch; not worth re-adding without
+            // re-verifying per-model every time GEMINI_AUDIO_MODEL changes.
             responseMimeType: "application/json",
             responseSchema: EXTRACTION_RESPONSE_SCHEMA,
-            // No thinking tokens and a schema-constrained answer only needs
-            // room for the JSON itself (~100-150 tokens observed).
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
           },
         }
       : {

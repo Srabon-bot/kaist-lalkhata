@@ -57,19 +57,24 @@ export const dict = {
 
   "story.title": { bn: "কেন \"হাল খাতা\"? কেন লাল রঙ?", en: "Why \"Haal Khata\"? Why red?", ko: "왜 \"할 카타\"일까요? 왜 빨간색일까요?" },
   "story.body1": {
-    bn: "৪৩০ বছরেরও বেশি সময় ধরে বাংলার দোকানদাররা প্রতি পহেলা বৈশাখে (বাংলা নববর্ষে) নতুন খাতা খোলেন — একে বলে হালখাতা। পুরনো খাতা বন্ধ করে, গ্রাহকদের বাকি শোধ করার আমন্ত্রণ জানিয়ে, মিষ্টি ও ছোট উপহার দিয়ে নতুন বছর শুরু হতো।",
-    en: "For over 430 years, Bengali shopkeepers have opened a new ledger every Pohela Boishakh (Bengali New Year) — a tradition called Haal Khata. They'd close the old book, invite customers to settle their baki (credit), and welcome them with sweets and small gifts to start the year fresh.",
-    ko: "430년이 넘도록 벵골 상인들은 매년 포헬라 보이샤크(벵골 신년)에 새 장부를 엽니다 — 이를 할 카타라고 부릅니다. 옛 장부를 닫고, 고객들에게 외상(바키)을 갚도록 초대하며, 달콤한 음식과 작은 선물로 새해를 맞이했습니다.",
+    bn: "হালখাতার শিকড় মুঘল আমলে — সম্রাট আকবর ১৫৮৪ সালে কৃষি মৌসুমের সাথে খাজনা আদায় মেলাতে বাংলা সন সংস্কার করেন, আর পরে বাংলার নবাব মুর্শিদকুলি খাঁ 'পুণ্যাহ' নামে একটি নববর্ষের রাজস্ব অনুষ্ঠান প্রবর্তন করেন — যা থেকে স্থানীয় ব্যবসায়ীরা নিজেদের রীতি তৈরি করেন: প্রতি পহেলা বৈশাখে (বাংলা নববর্ষে) পুরনো খাতা বন্ধ করে নতুন খাতা খোলা। এই প্রথা প্রায় অবিচ্ছিন্নভাবে চলে আসছে ৪৩০ বছরেরও বেশি সময় ধরে।",
+    en: "Haal Khata's roots trace back to the Mughal era: Emperor Akbar reformed the Bengali calendar in 1584 to line up tax collection with the harvest, and Bengal's Nawab Murshid Quli Khan later formalized a new-year revenue ceremony called \"Punyaho\" — which local merchants adapted into a custom of their own: closing the old ledger and opening a new one every Pohela Boishakh (Bengali New Year). The practice has continued, almost unbroken, for more than 430 years.",
+    ko: "할 카타의 뿌리는 무굴 제국 시대로 거슬러 올라갑니다. 무굴 황제 아크바르(Akbar)는 1584년 세금 징수 시기를 수확철에 맞추기 위해 벵골력을 개편했고, 이후 벵골의 태수(나와브) 무르시드 쿨리 칸이 '푼예호(Punyaho)'라는 신년 세금 의식을 도입했습니다. 지역 상인들은 이를 자신들만의 관습으로 발전시켜, 매년 포헬라 보이샤크(벵골 신년)마다 옛 장부를 닫고 새 장부를 여는 전통을 만들었습니다. 이 관습은 430년이 넘도록 거의 끊이지 않고 이어져 왔습니다.",
   },
   "story.body2": {
-    bn: "খাতাটি প্রায়ই লাল কাপড়ে বাঁধা থাকতো — মজবুত, আর গোপনে বদলানো যায় না বলেই গ্রাহকরা এটি বিশ্বাস করতেন। এই বিশ্বাসই আসল কথা — লাল রংটা শুধু সাজ নয়।",
-    en: "The ledger was almost always bound in red cloth — sturdy, and impossible to quietly alter, which is exactly why customers trusted it. That trust is the real point — the red isn't just decoration.",
-    ko: "장부는 거의 항상 빨간 천으로 묶여 있었습니다 — 튼튼하고 몰래 바꿀 수 없었기에 고객들이 이를 신뢰했습니다. 그 신뢰가 핵심이며, 빨간색은 단순한 장식이 아닙니다.",
+    bn: "নতুন খাতাটি প্রায় সবসময় লাল কাপড়ে বাঁধা থাকতো — মজবুত, আর গোপনে বদলানো যায় না বলেই গ্রাহকরা এটি বিশ্বাস করতেন। মুসলিম দোকানদাররা প্রথম পাতায় লিখতেন 'বিসমিল্লাহ' বা 'এলাহী ভরসা'; হিন্দু ব্যবসায়ীরা করতেন গণেশ ও লক্ষ্মীর পূজা, সমৃদ্ধির কামনায়। দুই ভিন্ন ধর্ম, একই রীতি — বাংলার মুসলিম-হিন্দু ব্যবসা কতটা মিলেমিশে আছে তারই ছোট্ট দৃষ্টান্ত। এই বিশ্বাসই আসল কথা — লাল রংটা শুধু সাজ নয়।",
+    en: "The new ledger was almost always bound in red cloth — sturdy, and impossible to quietly alter, which is exactly why customers trusted it. Muslim shopkeepers would open it by writing \"Bismillah\" or \"Elahi Bharsa\" (\"trust in God\") on the first page; Hindu traders would perform a puja to Ganesh and Lakshmi for prosperity. Two different faiths, one shared ritual — a small, everyday example of how interwoven Bengali Muslim and Hindu commerce has always been. That trust is the real point — the red isn't just decoration.",
+    ko: "새 장부는 거의 항상 붉은 천으로 묶여 있었습니다 — 튼튼하고 몰래 고칠 수 없었기에 고객들이 이를 신뢰했습니다. 무슬림 상인들은 장부 첫 페이지에 '비스밀라(Bismillah)'나 '엘라히 바르샤(신께 의지한다는 뜻)'를 적었고, 힌두 상인들은 번영을 기원하며 가네샤와 락슈미 여신에게 뿌자(예배)를 올렸습니다. 서로 다른 두 종교가 하나의 의식을 공유한 셈이죠 — 벵골의 무슬림과 힌두 상업 문화가 얼마나 서로 얽혀 있는지 보여주는 작은 예입니다. 그 신뢰가 핵심이며, 빨간색은 단순한 장식이 아닙니다.",
   },
   "story.body3": {
-    bn: "এই অ্যাপ, হাল খাতা, সেই একই বিশ্বাসকে ডিজিটাল রূপ দিয়েছে — প্রতিটি কথা বলা হিসাব হয়ে যায় একটি স্থায়ী এন্ট্রি, হাতে লেখার বদলে মুখে বলা, তবু কেন্দ্রে সেই বাকি — যার উপর মুদি দোকানের প্রায় ৭৩%+ বিক্রি নির্ভর করে।",
-    en: "This app, Haal Khata, digitizes that same trust — every spoken transaction becomes a permanent entry, spoken instead of hand-written, still centered on baki, the credit system ~73%+ of mudi dokan sales run on.",
-    ko: "이 앱, 할 카타는 그 신뢰를 디지털로 옮겨왔습니다 — 말로 한 모든 거래가 영구적인 기록이 되며, 손으로 쓰는 대신 말로 하지만, 여전히 구멍가게 매출의 약 73%+가 의존하는 바키(외상)를 중심에 둡니다.",
+    bn: "পহেলা বৈশাখ ছিল সেই দিন, যেদিন দোকানদাররা গ্রাহকদের ডেকে আনতেন — বিক্রি করতে নয়, বরং আগের বছরের বাকি মেটাতে। যিনি শোধ করতে আসতেন, তাকে মিষ্টি, শরবত, কখনো কখনো ছোট উপহার বা ক্যালেন্ডার দিয়ে বরণ করা হতো। এটি ছিল হিসাব আর সৌহার্দের মিশেল — বছরে একবারের এই নতুন শুরু দোকানদার আর গ্রাহক দুজনেই সমান আগ্রহে অপেক্ষা করতেন।",
+    en: "Pohela Boishakh was the one day shopkeepers actively invited customers back — not to sell, but to settle baki (credit) from the year before. Whoever came to pay was welcomed with sweets, a cold drink, sometimes a small gift or calendar for their home. It was equal parts bookkeeping and goodwill: a once-a-year reset that customers looked forward to as much as merchants did.",
+    ko: "포헬라 보이샤크는 상인들이 고객을 다시 불러들이는 특별한 날이었습니다 — 물건을 팔기 위해서가 아니라, 지난 한 해의 바키(외상)를 정산하기 위해서였죠. 갚으러 온 손님은 달콤한 음식과 음료, 때로는 작은 선물이나 달력으로 환대받았습니다. 장부 정리이자 동시에 정을 나누는 자리였던 셈입니다 — 상인과 고객 모두가 손꼽아 기다리던, 일 년에 한 번뿐인 새로운 시작이었습니다.",
+  },
+  "story.body4": {
+    bn: "এই অ্যাপ, হাল খাতা, সেই একই বিশ্বাসকে নিয়ে এসেছে আপনার পকেটের ফোনে — প্রতিটি কথা বলা হিসাব হয়ে যায় একটি স্থায়ী এন্ট্রি, হাতে লেখার বদলে মুখে বলা, তবু কেন্দ্রে সেই বাকি — যার উপর বাংলাদেশের মুদি দোকানের প্রায় ৭৩%+ বিক্রি আজও নির্ভর করে।",
+    en: "This app, Haal Khata, carries that same trust into the phone in your pocket — every spoken transaction becomes a permanent entry, spoken instead of hand-written, still centered on baki, the credit system roughly 73%+ of mudi dokan (neighborhood grocery) sales in Bangladesh still run on.",
+    ko: "이 앱, 할 카타는 그 신뢰를 여러분의 손 안 휴대폰으로 그대로 옮겨왔습니다 — 말로 한 모든 거래가 손으로 쓰는 대신 영구적인 기록이 되며, 방글라데시 구멍가게(무디 도칸) 매출의 약 73%+가 지금도 의존하는 바키(외상) 제도를 여전히 중심에 둡니다.",
   },
 
   "ritual.button": { bn: "হালখাতা করুন", en: "Do Haal Khata", ko: "할 카타 하기" },

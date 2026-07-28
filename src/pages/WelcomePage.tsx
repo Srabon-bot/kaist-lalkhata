@@ -115,6 +115,11 @@ export function WelcomePage() {
 
   return (
     <div className="kantha-weave relative min-h-dvh overflow-hidden bg-khata-red-deep">
+      {/* Softened festive backdrop — blurred so focus stays on the book/CTA
+          rather than the busy illustrated scene (this page only; Layout's
+          own kantha-weave background elsewhere stays crisp). */}
+      <div className="kantha-weave-blur pointer-events-none absolute inset-0" aria-hidden="true" />
+
       {/* Ambient themed background — decorative marketing motion, not core UI
           feedback, so a slow continuous loop is fine here (PRD §5.4's "nothing
           loops except the record pulse" rule is about in-app interaction

@@ -121,7 +121,7 @@ export function BookPage({ children, closing, onClosed }: BookPageProps) {
   return (
     <div
       ref={cardRef}
-      className="relative z-10 flex flex-1 flex-col rounded-lg bg-page-cream p-4 opacity-0 shadow-md"
+      className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain rounded-lg bg-page-cream p-4 opacity-0 shadow-md"
       style={{ transformStyle: "preserve-3d" }}
     >
       <div ref={shadowRef} className="pointer-events-none absolute inset-0 z-20 rounded-lg opacity-0" aria-hidden="true" />

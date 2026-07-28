@@ -79,6 +79,22 @@
     background-repeat: no-repeat;
   }
 
+  /* Welcome-page-only softening: a backdrop-filter overlay sitting on top
+     of the same sharp .kantha-weave image (everywhere else, e.g. Layout,
+     stays crisp) so the eye lands on the book/CTA instead of the busy
+     illustrated scene. Deliberately backdrop-filter rather than a plain
+     `filter: blur()` on the image layer itself — blurring a large
+     background-image directly through `filter` tiles/rasterizes visibly
+     on Chromium (shows up as a seamed, "fragmented" image instead of one
+     smooth blur); backdrop-filter samples the composited backdrop through
+     a different, artifact-free path. The faint tint is there mainly to
+     guarantee Safari actually triggers the backdrop-filter pass. */
+  .kantha-weave-blur {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: color-mix(in srgb, var(--color-khata-red-deep) 12%, transparent);
+  }
+
   /* Ambient drifting blobs on the welcome page background */
   .blob {
     position: absolute;

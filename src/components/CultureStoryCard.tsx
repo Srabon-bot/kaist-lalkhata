@@ -13,7 +13,7 @@ function prefersReducedMotion(): boolean {
  * the app looks and works the way it does, not just what it does. */
 export function CultureStoryCard({ onClose }: { onClose: () => void }) {
   const t = useT();
-  const bodyKeys = ["story.body1", "story.body2", "story.body3"] as const;
+  const bodyKeys = ["story.body1", "story.body2", "story.body3", "story.body4"] as const;
   const backdropRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 

@@ -74,7 +74,7 @@ export function Layout() {
   };
 
   return (
-    <div className="kantha-weave relative mx-auto flex min-h-dvh max-w-md flex-col bg-khata-red-deep pb-24">
+    <div className="kantha-weave relative mx-auto flex h-dvh max-w-md flex-col bg-khata-red-deep pb-24">
       {/* Demo-only shortcut: opens the Haal Khata ritual from anywhere,
           without navigating to Summary first. Sits outside the book itself
           (fixed to the viewport, not the page spread) so it's always
@@ -138,8 +138,8 @@ export function Layout() {
         aria-hidden="true"
       />
 
-      <main className="relative z-10 flex flex-1 flex-col p-3">
-        <div className="relative flex flex-1" style={{ perspective: "1400px" }}>
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col p-3">
+        <div className="relative flex min-h-0 flex-1" style={{ perspective: "1400px" }}>
           {/* The red cover peeking out behind the page is part of the same
               "open book" illusion as the two panels above — hidden below
               md so mobile shows just the content card, nothing simulating

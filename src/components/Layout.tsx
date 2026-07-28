@@ -9,7 +9,7 @@ import { LangToggle } from "./LangToggle";
 import { HaalKhataRitual } from "./HaalKhataRitual";
 import { EmojiIcon } from "./EmojiIcon";
 import { db, popOldestPendingRecording } from "../lib/db";
-import { initSync } from "../lib/sync";
+import { initSync, pushToServer } from "../lib/sync";
 import { logout } from "../lib/api";
 import { ENTERED_KEY, SHOP_NAME_KEY, ACCOUNT_ID_KEY } from "../pages/WelcomePage";
 import { useT } from "../lib/i18n";
@@ -56,7 +56,13 @@ export function Layout() {
   // navigate away — see handleClosed.
   const handleLogout = () => setClosing(true);
 
-  const handleClosed = () => {
+  const handleClosed = async () => {
+    // Logging out is an in-app route change, not a tab close/hide — neither
+    // pagehide's beacon nor visibilitychange's push fires here, so without
+    // an explicit push a just-added entry could sit unsynced until
+    // something else (next login, going online) happens to trigger one.
+    // Awaited before clearing the session so it actually lands first.
+    await pushToServer();
     // Clears the server session cookie too — best-effort, fire-and-forget
     // since we're navigating away regardless. The account itself
     // (email/password hash or Google link, plus the display name) stays in

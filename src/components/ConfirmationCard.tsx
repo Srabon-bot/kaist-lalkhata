@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import type { ExtractionResult, ExtractionType } from "../lib/schema";
+import type { ExtractionResult, ExtractionType, ItemTranslations } from "../lib/schema";
 import { CONFIDENCE_FLAG_THRESHOLD } from "../config";
 import { useT, type DictKey } from "../lib/i18n";
 
@@ -7,6 +7,7 @@ export interface EditedEntry {
   type: Exclude<ExtractionType, "unclear">;
   customer: string | null;
   item: string | null;
+  itemTranslations: ItemTranslations | null;
   amountTaka: number;
   edited: boolean;
 }
@@ -64,10 +65,11 @@ export function ConfirmationCard({ result, onConfirm, onReRecord }: Confirmation
   const isAmountValid = amount.trim() !== "" && Number.isFinite(amountValue) && amountValue > 0;
   const showItemField = type !== "repayment";
 
+  const itemUnchanged = item === (result.item ?? "");
   const edited =
     type !== initialType ||
     customer !== (result.customer ?? "") ||
-    item !== (result.item ?? "") ||
+    !itemUnchanged ||
     amount !== (result.amount_taka != null ? String(result.amount_taka) : "");
 
   const handleConfirm = () => {
@@ -76,6 +78,10 @@ export function ConfirmationCard({ result, onConfirm, onReRecord }: Confirmation
       type,
       customer: customer.trim() ? customer.trim() : null,
       item: showItemField && item.trim() ? item.trim() : null,
+      // Only trust Gemma's translations when the item text is exactly what
+      // it produced — a hand-typed edit has no known translation, so it just
+      // displays as-is in every language rather than showing a stale one.
+      itemTranslations: showItemField && itemUnchanged ? (result.item_translations ?? null) : null,
       amountTaka: amountValue,
       edited,
     });

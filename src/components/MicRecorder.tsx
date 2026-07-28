@@ -1,12 +1,16 @@
 import { useEffect, useRef } from "react";
 import { animate, type JSAnimation } from "animejs";
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useAudioRecorder } from "../hooks/useAudioRecorder";
 import { EmojiIcon } from "./EmojiIcon";
 import { MAX_RECORDING_SECONDS } from "../config";
 import { dict, useLang, useT, type DictKey } from "../lib/i18n";
 
 interface MicRecorderProps {
-  onRecorded: (transcript: string) => void;
+  /** A real mic recording, ready to send straight to Gemini as audio. transcriptHint is the
+   * live browser SpeechRecognition transcript (best-effort — null if unsupported/failed). */
+  onAudioRecorded: (audioBase64: string, mimeType: string, transcriptHint: string | null) => void;
+  /** A sample-chip tap (no audio available) — goes through the text extraction path. */
+  onSampleText: (transcript: string) => void;
   disabled?: boolean;
 }
 
@@ -15,18 +19,18 @@ function prefersReducedMotion(): boolean {
 }
 
 // Lets someone who can't speak Bangla still trigger the real extraction
-// pipeline end-to-end — taps feed straight into the same onRecorded callback
-// a finished voice recording would, no mic required.
+// pipeline end-to-end — taps go through onSampleText (the text-extraction
+// path), no mic or audio required.
 const SAMPLES: { transcriptKey: DictKey; glossKey: DictKey }[] = [
   { transcriptKey: "mic.sampleCreditSale", glossKey: "type.creditSale" },
   { transcriptKey: "mic.sampleCashSale", glossKey: "type.cashSale" },
   { transcriptKey: "mic.sampleRepayment", glossKey: "type.repayment" },
 ];
 
-export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
+export function MicRecorder({ onAudioRecorded, onSampleText, disabled }: MicRecorderProps) {
   const t = useT();
   const { lang } = useLang();
-  const { status, elapsedSeconds, interimText, start, stop, cancel } = useSpeechRecognition(onRecorded, lang);
+  const { status, interimText, elapsedSeconds, start, stop, cancel } = useAudioRecorder(onAudioRecorded, lang);
   const micButtonRef = useRef<HTMLButtonElement>(null);
   const pulseRef = useRef<JSAnimation | null>(null);
 
@@ -73,7 +77,7 @@ export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
         <p className="max-w-xs text-center font-bangla text-sm text-khata-red" role="alert">
           {t("mic.unsupported")}
         </p>
-        <SampleChips onPick={onRecorded} t={t} />
+        <SampleChips onPick={onSampleText} t={t} />
       </div>
     );
   }
@@ -123,14 +127,14 @@ export function MicRecorder({ onRecorded, disabled }: MicRecorderProps) {
           disabled={disabled}
           onClick={start}
           aria-label={t("nav.mic")}
-          className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-khata-red text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
+          className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-rule-blue text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
         >
           <EmojiIcon src="mic.png" size={30} />
         </button>
         <p className="font-bangla text-sm text-ink/70">{t("mic.tapToSpeak")}</p>
         <p className="font-bangla text-xs text-ink/50">{t("mic.speakInLang")}</p>
       </div>
-      <SampleChips onPick={onRecorded} t={t} />
+      <SampleChips onPick={onSampleText} t={t} />
     </div>
   );
 }

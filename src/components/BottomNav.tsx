@@ -35,7 +35,7 @@ export function BottomNav({ onMicClick }: BottomNavProps) {
           type="button"
           onClick={onMicClick}
           aria-label={t("nav.mic")}
-          className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-khata-red text-white ring-4 ring-page-cream transition-transform active:scale-95 shadow-[0_10px_22px_-6px_rgba(122,21,18,0.55),0_0_0_6px_rgba(158,42,43,0.14)]"
+          className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-rule-blue text-white ring-4 ring-page-cream transition-transform active:scale-95 shadow-[0_10px_22px_-6px_rgba(61,90,128,0.55),0_0_0_6px_rgba(61,90,128,0.14)]"
         >
           <EmojiIcon src="mic.png" size={24} />
         </button>
@@ -51,12 +51,12 @@ function NavItem({ to, labelKey, icon, end }: { to: string; labelKey: DictKey; i
       to={to}
       end={end}
       className={({ isActive }) =>
-        `flex min-w-[64px] flex-col items-center gap-0.5 rounded-lg px-2 py-1 font-bangla text-xs ${
+        `flex min-w-[64px] flex-col items-center gap-1 rounded-lg px-2 py-1 font-bangla text-sm ${
           isActive ? "text-khata-red" : "text-ink/50"
         }`
       }
     >
-      <EmojiIcon src={icon} size={20} />
+      <EmojiIcon src={icon} size={24} />
       {t(labelKey)}
     </NavLink>
   );

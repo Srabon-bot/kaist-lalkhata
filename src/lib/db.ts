@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
+import type { ItemTranslations } from "./schema";
 
 export type EntryType = "credit_sale" | "cash_sale" | "repayment";
 
@@ -14,6 +15,15 @@ export interface LedgerEntry {
   type: EntryType;
   customerId: number | null; // local FK — null only for anonymous cash sales
   item: string | null;
+  // bn/en/ko renderings of `item` so the ledger/history views can show it in
+  // whatever language the UI is currently switched to (customer names stay
+  // as originally spoken — only item text is meant to translate). Local-only
+  // for now: not part of the server sync payload (src/lib/sync.ts), so a
+  // fresh pull on another device only carries `item`, not the translations —
+  // extending db/schema.sql to sync this is a deliberately separate step
+  // since it touches the live production database. Null for entries
+  // recorded before this field existed, or where item itself is null.
+  itemTranslations: ItemTranslations | null;
   amountTaka: number;
   createdAt: number; // epoch ms
   confidence: Confidence | null; // null for manually-entered rows
@@ -21,6 +31,13 @@ export interface LedgerEntry {
   edited: boolean; // user changed a field on the confirmation card
   deletedAt: number | null; // soft-delete marker (see rollbackEntry) — a hard
   // local delete would have nothing left to sync to other devices
+}
+
+/** Item text in the ledger/history's current display language, falling back
+ * to whatever language it was originally recorded in when no translation is
+ * stored (older entries, or a hand-edited item with translations cleared). */
+export function displayItem(entry: LedgerEntry, lang: "bn" | "en" | "ko"): string | null {
+  return entry.itemTranslations?.[lang] ?? entry.item;
 }
 
 export interface Customer {
@@ -34,10 +51,24 @@ export interface Customer {
   updatedAt: number;
 }
 
-/** An utterance transcribed while offline, queued for extraction once back online (PRD F8). */
+/**
+ * An utterance captured while offline, queued for extraction once back
+ * online (PRD F8). `transcript` is the legacy Web-Speech-API shape;
+ * `audioBase64`/`audioMimeType` are the direct-Gemini-audio experiment's
+ * shape (raw recording, extracted+transcribed server-side once back online
+ * instead of client-side). Exactly one of the two is set per row — not a
+ * strict union because Dexie doesn't index/type non-indexed fields, so this
+ * stays a plain optional-fields interface rather than a schema migration.
+ */
 export interface PendingRecording {
   id?: number;
-  transcript: string;
+  transcript?: string;
+  audioBase64?: string;
+  audioMimeType?: string;
+  /** Best-effort browser SpeechRecognition transcript captured alongside the
+   * audio (see useAudioRecorder.ts) — a disambiguation hint only, replayed
+   * along with the audio once back online. */
+  audioTranscriptHint?: string | null;
   createdAt: number;
 }
 
@@ -102,6 +133,7 @@ export interface RecordEntryInput {
   type: EntryType;
   customerName: string | null;
   item: string | null;
+  itemTranslations: ItemTranslations | null;
   amountTaka: number;
   confidence: Confidence | null;
   transcript: string | null;
@@ -133,6 +165,7 @@ export async function recordEntry(input: RecordEntryInput): Promise<LedgerEntry>
       type: input.type,
       customerId,
       item: input.item,
+      itemTranslations: input.itemTranslations,
       amountTaka: input.amountTaka,
       createdAt: Date.now(),
       confidence: input.confidence,
@@ -156,6 +189,7 @@ export async function repayBaki(customerId: number, amountTaka: number): Promise
       type: "repayment",
       customerId,
       item: null,
+      itemTranslations: null,
       amountTaka,
       createdAt: Date.now(),
       confidence: null,
@@ -248,6 +282,15 @@ export function computeTotals(entries: LedgerEntry[]): DailyTotals {
 /** Queues an utterance transcribed while offline for extraction once connectivity returns. */
 export async function queuePendingRecording(transcript: string): Promise<void> {
   await db.pendingRecordings.add({ transcript, createdAt: Date.now() });
+}
+
+/** Queues a raw recording captured while offline, for direct-Gemini-audio extraction once back online. */
+export async function queuePendingAudioRecording(
+  audioBase64: string,
+  audioMimeType: string,
+  audioTranscriptHint: string | null,
+): Promise<void> {
+  await db.pendingRecordings.add({ audioBase64, audioMimeType, audioTranscriptHint, createdAt: Date.now() });
 }
 
 export async function popOldestPendingRecording(): Promise<PendingRecording | undefined> {

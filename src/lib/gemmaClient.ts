@@ -69,6 +69,69 @@ export async function extractFromTranscript(transcript: string): Promise<Extract
   throw new GemmaError("Gemma did not return valid ledger JSON after repair retry", "invalid_json");
 }
 
+async function callAudioProxy(
+  audioBase64: string,
+  mimeType: string,
+  lang: string,
+  transcriptHint: string | null,
+  repair: boolean,
+): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GEMMA_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(GEMMA_PROXY_ENDPOINT, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode: "extract-audio", audioBase64, mimeType, lang, transcriptHint, repair }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new GemmaError("Gemma request timed out", "timeout");
+    }
+    throw new GemmaError("Network error reaching /api/gemma", "network");
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!res.ok) {
+    throw new GemmaError(`Proxy responded ${res.status}`, res.status >= 500 ? "server" : "network");
+  }
+
+  const data = (await res.json()) as { text?: string; error?: string };
+  if (!data.text) {
+    throw new GemmaError(data.error ?? "Empty response from proxy", "server");
+  }
+  return data.text;
+}
+
+/**
+ * Hybrid: sends a raw recording straight to Gemini (audio input, not the
+ * browser's Web Speech transcript) for the actual transcription+extraction,
+ * plus that same browser transcript as a best-effort disambiguation hint
+ * (transcriptHint — null if SpeechRecognition was unsupported/failed; the
+ * audio itself stays authoritative, see buildAudioExtractionPrompt). Same
+ * repair-retry behavior as extractFromTranscript.
+ */
+export async function extractFromAudio(
+  audioBase64: string,
+  mimeType: string,
+  lang: string,
+  transcriptHint: string | null,
+): Promise<ExtractionResult> {
+  const rawFirst = await callAudioProxy(audioBase64, mimeType, lang, transcriptHint, false);
+  const parsed = tryParse(rawFirst);
+  if (parsed) return parsed;
+
+  const rawRetry = await callAudioProxy(audioBase64, mimeType, lang, transcriptHint, true);
+  const repaired = tryParse(rawRetry);
+  if (repaired) return repaired;
+
+  throw new GemmaError("Gemma did not return valid ledger JSON after repair retry", "invalid_json");
+}
+
 function tryParse(text: string): ExtractionResult | null {
   try {
     const json = JSON.parse(stripCodeFences(text));

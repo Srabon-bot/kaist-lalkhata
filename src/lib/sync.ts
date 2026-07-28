@@ -150,6 +150,9 @@ export async function pullFromServer(): Promise<void> {
           type: e.type,
           customerId: customerLocalId,
           item: e.item,
+          // Not synced (see LedgerEntry.itemTranslations) — a row pulled
+          // from another device just falls back to displaying `item` as-is.
+          itemTranslations: null,
           amountTaka: e.amountTaka,
           createdAt: e.createdAt,
           confidence: e.confidence,

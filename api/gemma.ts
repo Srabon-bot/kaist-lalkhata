@@ -9,12 +9,50 @@
 // Vercel's Node builder) with limited time to debug further. Reverted to
 // Edge, which does work correctly; the occasional timeout on the slowest
 // requests is a known, documented limitation (see README/writeup).
-import { GEMMA_MODEL, GEMMA_TIMEOUT_MS } from "../src/config";
-import { buildExtractionPrompt, buildInsightPrompt, REPAIR_SUFFIX } from "../src/lib/prompt";
+import { GEMMA_MODEL, GEMINI_AUDIO_MODEL, GEMMA_TIMEOUT_MS, MAX_INLINE_AUDIO_BYTES } from "../src/config";
+import { buildExtractionPrompt, buildAudioExtractionPrompt, buildInsightPrompt, REPAIR_SUFFIX } from "../src/lib/prompt";
 
 export const config = { runtime: "edge" };
 
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMMA_MODEL}:generateContent`;
+function geminiUrl(model: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
+
+// Mirrors ExtractionResultSchema (src/lib/schema.ts). Passed as
+// generationConfig.responseSchema on the extract-audio call so the model is
+// constrained to exactly these fields — no markdown fences, no re-deriving
+// the shape in prose within the prompt. Verified live: gemini-3.5-flash
+// honors this and drops the ``` json fences it otherwise adds unprompted.
+const EXTRACTION_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    type: { type: "STRING", enum: ["credit_sale", "cash_sale", "repayment", "unclear"] },
+    customer: { type: "STRING", nullable: true },
+    item: { type: "STRING", nullable: true },
+    item_translations: {
+      type: "OBJECT",
+      nullable: true,
+      properties: {
+        bn: { type: "STRING", nullable: true },
+        en: { type: "STRING", nullable: true },
+        ko: { type: "STRING", nullable: true },
+      },
+      required: ["bn", "en", "ko"],
+    },
+    amount_taka: { type: "NUMBER", nullable: true },
+    confidence: {
+      type: "OBJECT",
+      properties: {
+        customer: { type: "NUMBER" },
+        item: { type: "NUMBER" },
+        amount: { type: "NUMBER" },
+      },
+      required: ["customer", "item", "amount"],
+    },
+    transcript: { type: "STRING" },
+  },
+  required: ["type", "customer", "item", "item_translations", "amount_taka", "confidence", "transcript"],
+} as const;
 
 // Best-effort in-memory rate limit per IP. Edge instances are ephemeral and
 // distributed, so this does not enforce a hard global cap — it just blunts a
@@ -37,9 +75,22 @@ interface GemmaRequestBody {
   transcript?: string;
   /** Set on the automatic retry-with-repair pass after malformed JSON. */
   repair?: boolean;
-  /** PRD §4.2 S3: weekly-summary text -> one short Bangla insight sentence. */
-  mode?: "extract" | "insight";
+  /** PRD §4.2 S3: weekly-summary text -> one short Bangla insight sentence.
+   * "extract-audio" (experiment): raw audio -> ledger JSON in one call,
+   * skipping the browser Web Speech transcription step entirely. */
+  mode?: "extract" | "insight" | "extract-audio";
   insightData?: string;
+  /** extract-audio mode: base64-encoded recording. */
+  audioBase64?: string;
+  /** extract-audio mode: e.g. "audio/webm", "audio/wav". */
+  mimeType?: string;
+  /** extract-audio mode: current UI language, passed as a disambiguation hint only. */
+  lang?: string;
+  /** extract-audio mode: best-effort browser SpeechRecognition transcript of
+   * the same recording, offered as a disambiguation clue only — never
+   * authoritative over what the model actually hears. Null/absent when
+   * SpeechRecognition was unsupported or failed client-side. */
+  transcriptHint?: string | null;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -66,12 +117,28 @@ export default async function handler(req: Request): Promise<Response> {
 
   const mode = body.mode ?? "extract";
 
+  let model = GEMMA_MODEL;
   let promptText: string;
+  let audioPart: { inlineData: { mimeType: string; data: string } } | null = null;
+
   if (mode === "insight") {
     if (!body.insightData || !body.insightData.trim()) {
       return json({ error: "invalid_request", message: "insightData is required" }, 400);
     }
     promptText = buildInsightPrompt(body.insightData);
+  } else if (mode === "extract-audio") {
+    if (!body.audioBase64 || !body.mimeType) {
+      return json({ error: "invalid_request", message: "audioBase64 and mimeType are required" }, 400);
+    }
+    // Base64 inflates size ~4/3; check before spending a model call on an
+    // oversized payload that would just fail the API's 20MB request cap.
+    if (body.audioBase64.length * 0.75 > MAX_INLINE_AUDIO_BYTES) {
+      return json({ error: "invalid_request", message: "Audio too large for inline upload" }, 413);
+    }
+    model = GEMINI_AUDIO_MODEL;
+    promptText =
+      buildAudioExtractionPrompt(body.lang ?? "bn", body.transcriptHint ?? null) + (body.repair ? REPAIR_SUFFIX : "");
+    audioPart = { inlineData: { mimeType: body.mimeType, data: body.audioBase64 } };
   } else {
     if (!body.transcript || !body.transcript.trim()) {
       return json({ error: "invalid_request", message: "transcript is required" }, 400);
@@ -79,23 +146,46 @@ export default async function handler(req: Request): Promise<Response> {
     promptText = buildExtractionPrompt(body.transcript) + (body.repair ? REPAIR_SUFFIX : "");
   }
 
-  const geminiPayload = {
-    contents: [{ parts: [{ text: promptText }] }],
-    generationConfig: {
-      temperature: 0.2,
-      // gemma-4-*-it spends part of its output budget on internal "thought"
-      // tokens before the final answer (thinkingConfig can't disable it —
-      // verified 400 "Thinking budget is not supported for this model").
-      // Budget generously so the actual JSON isn't truncated away.
-      maxOutputTokens: 4096,
-    },
-  };
+  const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
+    { text: promptText },
+  ];
+  if (audioPart) parts.push(audioPart);
+
+  const geminiPayload =
+    mode === "extract-audio"
+      ? {
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0.2,
+            // Real Gemini models (unlike Gemma here) accept thinkingConfig.
+            // Measured live: this extraction task doesn't need "thinking" —
+            // 303 thought tokens saved per call with identical accuracy on
+            // the cases tested, vs. gemma-4's fixed thinking overhead.
+            thinkingConfig: { thinkingBudget: 0 },
+            responseMimeType: "application/json",
+            responseSchema: EXTRACTION_RESPONSE_SCHEMA,
+            // No thinking tokens and a schema-constrained answer only needs
+            // room for the JSON itself (~100-150 tokens observed).
+            maxOutputTokens: 1024,
+          },
+        }
+      : {
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0.2,
+            // gemma-4-*-it spends part of its output budget on internal "thought"
+            // tokens before the final answer (thinkingConfig can't disable it —
+            // verified 400 "Thinking budget is not supported for this model").
+            // Budget generously so the actual JSON isn't truncated away.
+            maxOutputTokens: 4096,
+          },
+        };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GEMMA_TIMEOUT_MS);
 
   try {
-    const upstream = await fetch(GEMINI_URL, {
+    const upstream = await fetch(geminiUrl(model), {
       method: "POST",
       headers: {
         "content-type": "application/json",

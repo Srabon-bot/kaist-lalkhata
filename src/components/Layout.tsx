@@ -17,6 +17,9 @@ import { useT } from "../lib/i18n";
 export function Layout() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [initialTranscript, setInitialTranscript] = useState<string | null>(null);
+  const [initialAudio, setInitialAudio] = useState<{ base64: string; mimeType: string; transcriptHint: string | null } | null>(
+    null,
+  );
   const [closing, setClosing] = useState(false);
   const [demoRitualOpen, setDemoRitualOpen] = useState(false);
   const navigate = useNavigate();
@@ -35,7 +38,11 @@ export function Layout() {
       const next = await popOldestPendingRecording();
       if (!next || cancelled) return;
       await db.pendingRecordings.delete(next.id!);
-      setInitialTranscript(next.transcript);
+      if (next.audioBase64 && next.audioMimeType) {
+        setInitialAudio({ base64: next.audioBase64, mimeType: next.audioMimeType, transcriptHint: next.audioTranscriptHint ?? null });
+      } else if (next.transcript) {
+        setInitialTranscript(next.transcript);
+      }
       setRecordOpen(true);
     };
 
@@ -94,9 +101,9 @@ export function Layout() {
         type="button"
         onClick={() => setDemoRitualOpen(true)}
         aria-label={t("ritual.button")}
-        className="fixed left-3 top-3 z-40 flex items-center gap-1 rounded-full bg-khata-red px-3 py-1.5 font-bangla text-xs font-semibold text-white shadow-lg md:left-auto md:right-3"
+        className="fixed left-3 top-3 z-40 flex items-center gap-1.5 rounded-full bg-khata-red px-4 py-2 font-bangla text-sm font-semibold text-white shadow-lg md:left-auto md:right-3"
       >
-        <EmojiIcon src="lamp.png" size={12} />
+        <EmojiIcon src="lamp.png" size={16} />
         {t("ritual.button")}
       </button>
       {demoRitualOpen && <HaalKhataRitual onClose={() => setDemoRitualOpen(false)} />}
@@ -179,9 +186,11 @@ export function Layout() {
       <RecordFlow
         open={recordOpen}
         initialTranscript={initialTranscript}
+        initialAudio={initialAudio}
         onClose={() => {
           setRecordOpen(false);
           setInitialTranscript(null);
+          setInitialAudio(null);
         }}
       />
     </div>

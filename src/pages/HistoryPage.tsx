@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, rollbackEntry, startOfThisYear, isLive, type LedgerEntry } from "../lib/db";
+import { db, displayItem, rollbackEntry, startOfThisYear, isLive, type LedgerEntry } from "../lib/db";
 import { formatTaka, numeralStyleForLang } from "../lib/numerals";
 import { EmptyState } from "../components/EmptyState";
 import { useLang, useT, type DictKey } from "../lib/i18n";
@@ -54,6 +54,7 @@ export function HistoryPage() {
         <ul className="ruled-paper rounded-2xl bg-white shadow-sm">
           {entries.map((entry) => {
             const meta = TYPE_META[entry.type];
+            const item = displayItem(entry, lang);
             const customerName = entry.customerId ? (customersById.get(entry.customerId)?.name ?? null) : null;
             const dateTime = new Date(entry.createdAt).toLocaleString(dateLocale, {
               month: "short",
@@ -69,7 +70,7 @@ export function HistoryPage() {
                   <div className="min-w-0">
                     <p className="truncate font-bangla text-base font-medium text-ink">
                       {customerName ?? (entry.type === "cash_sale" ? t("common.cash") : "—")}
-                      {entry.item && <span className="text-ink/50"> · {entry.item}</span>}
+                      {item && <span className="text-ink/50"> · {item}</span>}
                     </p>
                     <p className="font-bangla text-xs text-ink/50">
                       {t(meta.labelKey)} · {dateTime}

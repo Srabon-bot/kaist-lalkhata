@@ -4,18 +4,26 @@ import { MicRecorder } from "./MicRecorder";
 import { ParsingIndicator } from "./ParsingIndicator";
 import { ConfirmationCard, type EditedEntry } from "./ConfirmationCard";
 import { EmojiIcon } from "./EmojiIcon";
-import { extractFromTranscript, GemmaError } from "../lib/gemmaClient";
-import { recordEntry, queuePendingRecording } from "../lib/db";
+import { extractFromTranscript, extractFromAudio, GemmaError } from "../lib/gemmaClient";
+import { recordEntry, queuePendingRecording, queuePendingAudioRecording } from "../lib/db";
 import type { ExtractionResult } from "../lib/schema";
-import { useT, type DictKey } from "../lib/i18n";
+import { useT, useLang, type DictKey } from "../lib/i18n";
 
 type Phase = "capture" | "parsing" | "confirm" | "error" | "queued";
+
+interface PendingAudio {
+  base64: string;
+  mimeType: string;
+  transcriptHint: string | null;
+}
 
 interface RecordFlowProps {
   open: boolean;
   onClose: () => void;
   /** A previously-queued offline utterance to process immediately on open. */
   initialTranscript?: string | null;
+  /** A previously-queued offline recording to process immediately on open. */
+  initialAudio?: PendingAudio | null;
 }
 
 const ERROR_COPY: Record<GemmaError["kind"], DictKey> = {
@@ -29,15 +37,21 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps) {
+type PendingPayload =
+  | { kind: "text"; transcript: string }
+  | { kind: "audio"; base64: string; mimeType: string; transcriptHint: string | null };
+
+export function RecordFlow({ open, onClose, initialTranscript, initialAudio }: RecordFlowProps) {
   const t = useT();
+  const { lang } = useLang();
   const [mounted, setMounted] = useState(open);
   const [phase, setPhase] = useState<Phase>("capture");
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const lastTranscriptRef = useRef<string | null>(null);
+  const lastPayloadRef = useRef<PendingPayload | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const processedInitialRef = useRef<string | null>(null);
+  const processedInitialAudioRef = useRef<PendingAudio | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const errorBoxRef = useRef<HTMLDivElement>(null);
@@ -46,7 +60,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
     setPhase("capture");
     setResult(null);
     setErrorMessage("");
-    lastTranscriptRef.current = null;
+    lastPayloadRef.current = null;
   };
 
   const handleClose = () => {
@@ -97,8 +111,8 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mounted]);
 
-  const runExtraction = async (transcript: string) => {
-    lastTranscriptRef.current = transcript;
+  const runTextExtraction = async (transcript: string) => {
+    lastPayloadRef.current = { kind: "text", transcript };
 
     if (!navigator.onLine) {
       await queuePendingRecording(transcript);
@@ -118,6 +132,34 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
     }
   };
 
+  const runAudioExtraction = async (base64: string, mimeType: string, transcriptHint: string | null) => {
+    lastPayloadRef.current = { kind: "audio", base64, mimeType, transcriptHint };
+
+    if (!navigator.onLine) {
+      await queuePendingAudioRecording(base64, mimeType, transcriptHint);
+      setPhase("queued");
+      return;
+    }
+
+    setPhase("parsing");
+    try {
+      const extracted = await extractFromAudio(base64, mimeType, lang, transcriptHint);
+      setResult(extracted);
+      setPhase("confirm");
+    } catch (err) {
+      const kind = err instanceof GemmaError ? err.kind : "server";
+      setErrorMessage(t(ERROR_COPY[kind]));
+      setPhase("error");
+    }
+  };
+
+  const retryLastPayload = () => {
+    const payload = lastPayloadRef.current;
+    if (!payload) return;
+    if (payload.kind === "text") void runTextExtraction(payload.transcript);
+    else void runAudioExtraction(payload.base64, payload.mimeType, payload.transcriptHint);
+  };
+
   useEffect(() => {
     if (!open) return;
     closeButtonRef.current?.focus();
@@ -134,9 +176,17 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
     if (!open || !initialTranscript) return;
     if (processedInitialRef.current === initialTranscript) return;
     processedInitialRef.current = initialTranscript;
-    void runExtraction(initialTranscript);
+    void runTextExtraction(initialTranscript);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialTranscript]);
+
+  useEffect(() => {
+    if (!open || !initialAudio) return;
+    if (processedInitialAudioRef.current === initialAudio) return;
+    processedInitialAudioRef.current = initialAudio;
+    void runAudioExtraction(initialAudio.base64, initialAudio.mimeType, initialAudio.transcriptHint);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialAudio]);
 
   // A single gentle shake on arrival at the error state — never looping
   // (PRD §5.4: "gentle single shake / fade-in, nothing looping").
@@ -156,6 +206,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
       type: entry.type,
       customerName: entry.customer,
       item: entry.item,
+      itemTranslations: entry.itemTranslations,
       amountTaka: entry.amountTaka,
       confidence: result?.confidence ?? null,
       transcript: result?.transcript ?? null,
@@ -182,7 +233,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
 
         {phase === "capture" && (
           <div className="flex justify-center pb-2">
-            <MicRecorder onRecorded={runExtraction} />
+            <MicRecorder onAudioRecorded={runAudioExtraction} onSampleText={runTextExtraction} />
           </div>
         )}
 
@@ -211,7 +262,7 @@ export function RecordFlow({ open, onClose, initialTranscript }: RecordFlowProps
             <p className="font-bangla text-lg font-semibold text-khata-red">{errorMessage}</p>
             <button
               type="button"
-              onClick={() => lastTranscriptRef.current && runExtraction(lastTranscriptRef.current)}
+              onClick={retryLastPayload}
               className="rounded-full bg-khata-red px-6 py-3 font-bangla font-semibold text-white"
             >
               {t("common.tryAgain")}

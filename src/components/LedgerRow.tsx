@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { animate, createSpring } from "animejs";
-import type { LedgerEntry } from "../lib/db";
+import { displayItem, type LedgerEntry } from "../lib/db";
 import { formatTaka } from "../lib/numerals";
-import { useT, type DictKey } from "../lib/i18n";
+import { useLang, useT, type DictKey } from "../lib/i18n";
 
 interface LedgerRowProps {
   entry: LedgerEntry;
@@ -25,7 +25,9 @@ function prefersReducedMotion(): boolean {
 
 export function LedgerRow({ entry, customerName, numeralStyle, isNew, className }: LedgerRowProps) {
   const t = useT();
+  const { lang } = useLang();
   const meta = TYPE_META[entry.type];
+  const item = displayItem(entry, lang);
   const time = new Date(entry.createdAt).toLocaleTimeString(numeralStyle === "bn" ? "bn-BD" : "en-US", {
     hour: "2-digit",
     minute: "2-digit",
@@ -52,7 +54,7 @@ export function LedgerRow({ entry, customerName, numeralStyle, isNew, className 
       <div className="min-w-0">
         <p className="truncate font-bangla text-base font-medium text-ink">
           {customerName ?? (entry.type === "cash_sale" ? t("common.cash") : "—")}
-          {entry.item && <span className="text-ink/50"> · {entry.item}</span>}
+          {item && <span className="text-ink/50"> · {item}</span>}
         </p>
         <p className="font-bangla text-xs text-ink/50">
           {t(meta.labelKey)} · {time}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 80" width="1200" height="80">
+  <!-- Alpona-inspired border: the rice-paste floor art Bengali households paint
+       for Pohela Boishakh and festive doorsteps — a running vine with paired
+       leaves and dot clusters. Tileable every 120px along x. -->
+  <defs>
+    <pattern id="alponaUnit" width="120" height="80" patternUnits="userSpaceOnUse">
+      <path d="M0,40 C20,10 40,70 60,40 C80,10 100,70 120,40"
+            fill="none" stroke="#9e2a2b" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M30,25 C34,15 46,15 50,25 C46,30 34,30 30,25 Z" fill="#985200" />
+      <path d="M70,55 C74,65 86,65 90,55 C86,50 74,50 70,55 Z" fill="#985200" />
+      <circle cx="60" cy="40" r="4.5" fill="#7a1512" />
+      <circle cx="0" cy="40" r="3" fill="#3d5a80" />
+      <circle cx="120" cy="40" r="3" fill="#3d5a80" />
+    </pattern>
+  </defs>
+  <rect width="1200" height="80" fill="url(#alponaUnit)" />
+</svg>

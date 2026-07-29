@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Stylized lotus — recurring symbol in Bengali folk art and Mughal-era
+       architecture/manuscript work, used here as a single section-divider
+       icon (e.g. between slide sections, or on a title page). -->
+  <g fill="#9e2a2b">
+    <path d="M100,100 C100,60 80,35 100,15 C120,35 100,60 100,100 Z" />
+    <path d="M100,100 C65,85 45,55 55,25 C90,35 100,70 100,100 Z" />
+    <path d="M100,100 C135,85 155,55 145,25 C110,35 100,70 100,100 Z" />
+    <path d="M100,100 C55,100 25,90 15,110 C40,135 80,120 100,100 Z" />
+    <path d="M100,100 C145,100 175,90 185,110 C160,135 120,120 100,100 Z" />
+  </g>
+  <circle cx="100" cy="105" r="16" fill="#985200" />
+  <circle cx="100" cy="105" r="7" fill="#faf3e3" />
+</svg>

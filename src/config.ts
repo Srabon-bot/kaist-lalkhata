@@ -11,33 +11,7 @@
 // turning a messy Bangla/English/Korean transcript into typed ledger JSON.
 export const GEMMA_MODEL = "gemma-4-26b-a4b-it";
 
-// Experiment: unlike the Gemma variants above, real Gemini models on this
-// same key DO have audio input enabled — verified live against
-// generateContent with an inline audio/wav part (gemini-3.5-flash and
-// gemini-3.6-flash both correctly described test audio; gemini-2.5-flash is
-// 404 "no longer available to new users" on this key, gemini-2.0-flash is
-// 429 zero-quota). Pinned rather than "gemini-flash-latest" so the model
-// can't silently drift under us mid-demo. Lets a recording skip the
-// browser Web-Speech transcription step entirely: raw audio goes straight
-// to Gemini, which transcribes AND extracts ledger JSON in one call.
-//
-// Switched from gemini-3.5-flash to gemini-3.6-flash after the live site
-// started 429ing mid-demo — turned out gemini-3.5-flash's free-tier quota
-// on this project is a hard 20 requests/DAY (not per-minute), which normal
-// testing burns through fast. gemini-3.6-flash's quota is separate (scoped
-// per-model-per-project) and untouched. If this model also gets exhausted,
-// same fix again: check the exact quotaId in the 429 body against
-// https://ai.dev/rate-limit and swap to another model with headroom — or
-// enable billing on the project to remove free-tier caps entirely, which is
-// the only fix that doesn't eventually hit this same wall again.
-export const GEMINI_AUDIO_MODEL = "gemini-3.6-flash";
-
 export const GEMMA_PROXY_ENDPOINT = "/api/gemma";
-
-// Inline audio must keep the whole request (prompt + base64 audio) under
-// the API's 20MB request-size ceiling; MAX_RECORDING_SECONDS already caps
-// capture well under that for any reasonable mic bitrate.
-export const MAX_INLINE_AUDIO_BYTES = 19 * 1024 * 1024;
 
 export const MAX_RECORDING_SECONDS = 28; // hard cap on a single spoken turn
 

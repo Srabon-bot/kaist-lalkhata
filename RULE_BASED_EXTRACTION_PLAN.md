@@ -271,5 +271,12 @@ Sub-tasks, in order of how load-bearing they are:
       rather than chased. This is the honest shape of "foolproof" for a
       pattern-matching engine: meaningfully hardened against real failure
       modes, not literally immune to every possible phrasing.
-- [ ] **Still not committed/pushed** — holding for explicit go-ahead before
-      shipping, given how much this touches. Ask before committing.
+- [x] Committed and pushed (see git log — `b2ffab1` and follow-ups).
+- [x] 2026-07-29: Resolved the open "delete or leave as unused fallback"
+      question from the Approach section above, during a repo cleanup pass —
+      deleted. `gemmaClient.ts`'s `extractFromTranscript`/`extractFromAudio`,
+      `prompt.ts`'s `buildExtractionPrompt`/`buildAudioExtractionPrompt`, and
+      `api/gemma.ts`'s `extract`/`extract-audio` modes were confirmed unused
+      (grepped, zero call sites beyond their own definitions) and removed.
+      `api/gemma.ts` is insight-mode-only now. Typecheck/build clean;
+      production JS bundle dropped ~561KB → ~497KB.

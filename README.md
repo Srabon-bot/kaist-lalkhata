@@ -1,22 +1,47 @@
-# হাল খাতা — Haal Khata
+<p align="center">
+  <img src="public/icon-source.svg" width="96" height="96" alt="Haal Khata icon — a red-bound ledger book" />
+</p>
 
-**Voice-first bookkeeper for Bangladesh's mudi dokans — speaks Bangla,
-English, and Korean, and doesn't depend on an external AI API to work.**
+<h1 align="center">হাল খাতা — Haal Khata</h1>
 
-Say a transaction out loud — "রহিম ভাইকে ৫০ টাকার ডাল বাকি দিলাম" (*gave Rahim
-bhai 50 taka of lentils on credit*) — and it turns into a structured ledger
-entry: customer, item, amount, cash-or-credit. No typing, no forms.
+<p align="center">
+  <strong>Voice-first bookkeeper for Bangladesh's mudi dokans — speaks Bangla,<br />
+  English, and Korean, and doesn't depend on an external AI API to work.</strong>
+</p>
 
-**Live app:** https://haal-khata.vercel.app
+<p align="center">
+  <a href="https://haal-khata.vercel.app"><img alt="Live app" src="https://img.shields.io/badge/live-haal--khata.vercel.app-9e2a2b?style=flat-square" /></a>
+  <a href="https://github.com/Srabon-bot/kaist-lalkhata"><img alt="Source" src="https://img.shields.io/badge/source-GitHub-26201a?style=flat-square" /></a>
+  <img alt="Voice extraction" src="https://img.shields.io/badge/voice%20extraction-100%25%20local%2C%20zero%20API-2e7d4f?style=flat-square" />
+  <img alt="Languages" src="https://img.shields.io/badge/languages-বাংলা%20%C2%B7%20English%20%C2%B7%20한국어-3d5a80?style=flat-square" />
+</p>
 
-## Why
+<p align="center">
+  <img src="design/patterns/alpona-border.svg" width="100%" height="14" alt="" />
+</p>
+
+> Say a transaction out loud — *"রহিম ভাইকে ৫০ টাকার ডাল বাকি দিলাম"* ("gave
+> Rahim bhai 50 taka of lentils on credit") — and it turns into a structured
+> ledger entry: customer, item, amount, cash-or-credit. No typing, no forms.
+
+## The tradition
+
+*খাতা* (khata) means ledger; *হাল* (haal) means new, or fresh. For over 430
+years, Bengali shopkeepers have closed the old account book and opened a new
+one every Pohela Boishakh (Bengali New Year) — bound in red cloth, sturdy and
+impossible to quietly alter, which is exactly why customers trusted it.
+Customers were invited back not to buy, but to settle their *baki* (credit),
+and welcomed with sweets when they did. This app carries that same custom —
+and its name — into a shopkeeper's pocket. The full story, including why the
+book is bound in red, is one tap away in the app itself ("Why Haal Khata?").
+
+## The problem
 
 ~4.5 million mudi dokans operate in Bangladesh; 94% of middle-class
 households still shop at them, and 73%+ of sales run on credit (*baki*),
 tracked by hand in a paper ledger prone to disputes and lost records. Haal
 Khata replaces the pen with a voice, in a format shopkeepers already
-recognize — see the in-app "Why Haal Khata?" story for the 430-year-old
-tradition it's named after.
+recognize.
 
 ## How it works
 
@@ -63,7 +88,10 @@ position-based name/item extraction tuned to how each language actually
 marks those roles grammatically (Bangla কে/থেকে/টাকার postpositions,
 English prepositions, Korean particles). It also does typo/mishearing
 tolerance (Damerau-Levenshtein-style fuzzy matching, so a mis-transcribed
-trigger word like "credti" still classifies correctly).
+trigger word like "credti" still classifies correctly), and local
+vocabulary correction that snaps a noisy guess to this shop's own past
+customer names and items — the offline, zero-network equivalent of the
+"keyword boosting" cloud speech APIs sell.
 
 The honest tradeoff: this is pattern-matching, not an LLM, so it's less
 forgiving of truly unusual phrasing than Gemini was — the mic screen shows
@@ -102,3 +130,7 @@ the weekly insight card need real env vars set either way. See
 ## Team
 
 Made by **Team 6** — U222, U224, U202.
+
+<p align="center">
+  <img src="design/patterns/alpona-border.svg" width="100%" height="14" alt="" />
+</p>

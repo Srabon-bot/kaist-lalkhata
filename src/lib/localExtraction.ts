@@ -551,7 +551,7 @@ function correctToKnownVocab(value: string, known: string[]): string {
   return fuzzy ?? value;
 }
 
-/** Local, non-API replacement for extractFromTranscript/extractFromAudio.
+/** Local, non-API replacement for the old Gemini-backed extraction call.
  * Same output contract (ExtractionResultSchema) so nothing downstream
  * (ConfirmationCard, db.ts, displayItem) needs to know the difference.
  * `knownVocab` is optional local-only vocabulary correction — see

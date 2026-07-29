@@ -1,8 +1,8 @@
 // Vercel Edge Function — the server side of "sync on connect and on close"
 // (see src/lib/sync.ts for the client half). GET pulls the account's whole
-// ledger (small enough per the free-tier sizing in PLAN.md that a full
-// snapshot beats incremental diffing in complexity); POST pushes whatever
-// the client has queued locally since its last sync.
+// ledger (small enough at this app's scale that a full snapshot beats
+// incremental diffing in complexity); POST pushes whatever the client has
+// queued locally since its last sync.
 import { getSql } from "./_db";
 import { getSessionAccountId } from "./_session";
 import { json } from "./_http";

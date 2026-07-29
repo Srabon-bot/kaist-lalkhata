@@ -1,9 +1,9 @@
 // Cross-device sync: pull the account's ledger on connect (app load, and
 // whenever the `online` event fires after a spell offline), push local
 // changes on connect and again whenever the tab is closed/hidden or the
-// user logs off — see PLAN.md for the full design and why entries are
-// soft-deleted, customers keyed by name, and balances recomputed rather
-// than synced directly.
+// user logs off. Entries are soft-deleted (see db.ts's rollbackEntry),
+// customers are keyed by name, and balances are recomputed rather than
+// synced directly (see the comment further down).
 import { liveQuery } from "dexie";
 import { db, isLive, type LedgerEntry, type Customer, type Confidence } from "./db";
 
@@ -163,8 +163,8 @@ export async function pullFromServer(): Promise<void> {
       }
     }
 
-    // Balances are a derived cache, never synced directly (PLAN.md) —
-    // recompute every customer fresh from the now-merged, live entries.
+    // Balances are a derived cache, never synced directly — recompute every
+    // customer fresh from the now-merged, live entries.
     const allCustomers = await db.customers.toArray();
     const allEntries = await db.entries.toArray();
     for (const c of allCustomers) {

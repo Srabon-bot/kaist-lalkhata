@@ -57,7 +57,7 @@ recognize.
 - **Accounts + sync:** email/password or Google sign-in; a Postgres
   (Neon) database is the account-wide source of truth every device
   reconciles against, so the same khata works across a shopkeeper's phone
-  and a helper's phone. Full design in [`PLAN.md`](./PLAN.md).
+  and a helper's phone.
 - **Rollback, not delete:** entries are soft-deleted so a correction on one
   device syncs cleanly to every other device instead of just vanishing.
 
@@ -124,8 +124,7 @@ npm run dev             # voice entry works fully here — no API needed
 
 `npm run dev` alone is enough for voice entry and the rest of the ledger
 UI (a dev-only Vite middleware runs `api/*.ts` in-process). Auth, sync, and
-the weekly insight card need real env vars set either way. See
-[`PLAN.md`](./PLAN.md) for the full accounts/sync setup.
+the weekly insight card need real env vars set either way.
 
 ## Team
 

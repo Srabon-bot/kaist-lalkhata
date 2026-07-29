@@ -35,7 +35,7 @@ const API_ERROR_KEY: Partial<Record<ApiErrorCode, DictKey>> = {
 
 /**
  * A real sign up / log in flow, backed by a server account (api/auth/*.ts +
- * Neon Postgres — see PLAN.md) so the same login works from any device.
+ * Neon Postgres) so the same login works from any device.
  * Passwords are hashed server-side (PBKDF2 + per-account salt, see
  * passwordHash.ts, reused on both sides) — this component only ever sends
  * the raw password over HTTPS, same as any real site's login form; it's

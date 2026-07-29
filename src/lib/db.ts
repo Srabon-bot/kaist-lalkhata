@@ -11,7 +11,7 @@ export interface Confidence {
 
 export interface LedgerEntry {
   id?: number; // local Dexie primary key only — never sent to the server
-  uuid: string; // stable cross-device identity (see PLAN.md sync design)
+  uuid: string; // stable cross-device identity, used as the sync primary key
   type: EntryType;
   customerId: number | null; // local FK — null only for anonymous cash sales
   item: string | null;
@@ -74,8 +74,8 @@ class LalKhataDB extends Dexie {
     });
     // v3 added a local `accounts` table for a device-only auth prototype;
     // superseded by the server-backed accounts table in db/schema.sql once
-    // auth moved server-side for cross-device login (see PLAN.md) — dropped
-    // here rather than left as dead, unused local state.
+    // auth moved server-side for cross-device login — dropped here rather
+    // than left as dead, unused local state.
     this.version(4).stores({
       accounts: null,
       entries: "++id, &uuid, type, customerId, createdAt",

@@ -1,7 +1,7 @@
-// Thin client for the server-backed auth endpoints under api/auth/* — see
-// PLAN.md. Every call sends credentials so the httpOnly session cookie
-// round-trips; the server, not this module, is what actually verifies
-// anything (this file has no secrets, just fetch plumbing).
+// Thin client for the server-backed auth endpoints under api/auth/*. Every
+// call sends credentials so the httpOnly session cookie round-trips; the
+// server, not this module, is what actually verifies anything (this file
+// has no secrets, just fetch plumbing).
 
 export interface AuthResult {
   accountId: string;

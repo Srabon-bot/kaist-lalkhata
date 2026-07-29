@@ -129,15 +129,24 @@ export function useSpeechRecognition(
     };
 
     recognition.onresult = (event) => {
+      // Rebuild the final transcript from scratch on every event rather than
+      // appending via event.resultIndex. Android Chrome's continuous-mode
+      // recognizer periodically re-fires already-finalized results as "new"
+      // final results (resultIndex bookkeeping is unreliable there), so
+      // incremental `+=` appending double-counts phrases and the transcript
+      // repeats itself. Desktop Chrome doesn't have this bug, but rebuilding
+      // from index 0 each time is idempotent on both platforms.
+      let finalText = "";
       let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalTranscriptRef.current += result[0].transcript;
+          finalText += result[0].transcript;
         } else {
           interim += result[0].transcript;
         }
       }
+      finalTranscriptRef.current = finalText;
       setInterimText(interim);
     };
 

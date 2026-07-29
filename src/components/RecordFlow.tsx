@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { animate } from "animejs";
+import { useLiveQuery } from "dexie-react-hooks";
 import { MicRecorder } from "./MicRecorder";
 import { ConfirmationCard, type EditedEntry } from "./ConfirmationCard";
 import { extractLocally } from "../lib/localExtraction";
-import { recordEntry } from "../lib/db";
+import { db, recordEntry } from "../lib/db";
+import { KNOWN_ITEM_WORDS } from "../lib/itemDictionary";
 import type { ExtractionResult } from "../lib/schema";
 import { useT, useLang } from "../lib/i18n";
 
@@ -84,6 +86,20 @@ export function RecordFlow({ open, onClose }: RecordFlowProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mounted]);
 
+  // Known vocabulary for local, offline correction of noisy ASR guesses —
+  // no AI, no network: just this shop's own past customer names and item
+  // words (plus the static shop-item dictionary), read from Dexie. See
+  // KnownVocab in src/lib/localExtraction.ts.
+  const knownCustomers = useLiveQuery(() => db.customers.toArray(), []);
+  const recentEntries = useLiveQuery(() => db.entries.orderBy("createdAt").reverse().limit(300).toArray(), []);
+  const knownVocab = useMemo(
+    () => ({
+      customers: (knownCustomers ?? []).map((c) => c.name),
+      items: [...KNOWN_ITEM_WORDS, ...new Set((recentEntries ?? []).map((e) => e.item).filter((i): i is string => !!i))],
+    }),
+    [knownCustomers, recentEntries],
+  );
+
   // Local rule-based extraction (src/lib/localExtraction.ts) — no network
   // call, so this always succeeds structurally (worst case: type
   // "unclear"). The try/catch is just a safety net against an unexpected
@@ -93,7 +109,7 @@ export function RecordFlow({ open, onClose }: RecordFlowProps) {
   const runExtraction = (transcript: string) => {
     lastTranscriptRef.current = transcript;
     try {
-      setResult(extractLocally(transcript, lang));
+      setResult(extractLocally(transcript, lang, knownVocab));
       setPhase("confirm");
     } catch {
       setPhase("error");

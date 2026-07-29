@@ -38,7 +38,7 @@ const CREDIT_TRIGGERS: Record<Lang, string[]> = {
 // Kept deliberately conservative: only used as a fallback after
 // exact/prefix matching finds nothing, and only for words long enough that
 // a 1-edit match isn't likely to be a coincidence (see callers).
-function withinEditDistance1(a: string, b: string): boolean {
+export function withinEditDistance1(a: string, b: string): boolean {
   if (Math.abs(a.length - b.length) > 1) return false;
   if (a === b) return true;
   const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
@@ -247,7 +247,11 @@ function captureRun(tokens: string[], startIdx: number, max = 3): string | null 
   return out.length ? out.join(" ") : null;
 }
 
-function extractEn(text: string, type: ExtractionType): { customer: string | null; item: string | null; customerConfidence: number; itemConfidence: number } {
+function extractEn(
+  text: string,
+  type: ExtractionType,
+  knownVocab?: KnownVocab,
+): { customer: string | null; item: string | null; customerConfidence: number; itemConfidence: number } {
   const tokens = text.split(/\s+/).filter(Boolean);
   const lower = tokens.map((t) => t.toLowerCase().replace(/[.,]/g, ""));
   let customer: string | null = null;
@@ -353,6 +357,46 @@ function extractEn(text: string, type: ExtractionType): { customer: string | nul
     }
   }
 
+  // Terse slot format — "NAME ITEM AMOUNT [credit]", e.g. "Rohim biscuits
+  // 500" or "Rohim biscuits 500 credit" — no verb, no preposition, nothing
+  // for any branch above to anchor on (which is exactly why this only runs
+  // when both customer AND item are still empty: every other branch already
+  // had its shot and found nothing). Mirrors how bn/ko extraction already
+  // works positionally, sidestepping English's lack of grammatical markers
+  // by asking the user to just say the slots in a fixed order instead.
+  // "credit" itself needs no handling here — classify() already reads it
+  // off the full transcript regardless of where it falls.
+  if (!customer && !item && type !== "repayment") {
+    const amountIdx = lower.findIndex((t) => /\d/.test(t));
+    if (amountIdx >= 1) {
+      let span = trimLeadingFillers(tokens.slice(0, amountIdx), "en");
+      if (span.length >= 2) {
+        // Peel a known item phrase off the END first, longest match first
+        // (2 words before 1), since a few dictionary items are two words
+        // ("green chili", "mustard oil", "cooking gas") — a blind
+        // last-token split would otherwise cut those in half.
+        let picked: string | null = null;
+        for (const wordCount of [2, 1]) {
+          if (span.length <= wordCount) continue;
+          const candidate = span.slice(-wordCount).join(" ").toLowerCase();
+          if (knownVocab?.items.some((w) => w.toLowerCase() === candidate)) {
+            picked = span.slice(-wordCount).join(" ");
+            span = span.slice(0, -wordCount);
+            break;
+          }
+        }
+        if (!picked) {
+          picked = span[span.length - 1];
+          span = span.slice(0, -1);
+        }
+        item = picked;
+        itemConfidence = 0.6;
+        customer = span.length ? span.join(" ") : null;
+        customerConfidence = customer ? 0.6 : 0;
+      }
+    }
+  }
+
   return { customer, item, customerConfidence, itemConfidence };
 }
 
@@ -442,10 +486,39 @@ function buildItemTranslations(item: string | null, lang: Lang): ItemTranslation
   return translateItem(item, lang);
 }
 
+/** Vocabulary this shop has already used — past customer names (from Dexie)
+ * and known item words (the shop dictionary plus past item text) — so
+ * extraction can snap a noisy ASR guess to the word it almost certainly
+ * meant. This is the offline, zero-network equivalent of the "keyword
+ * boosting" cloud speech APIs sell (see RULE_BASED_EXTRACTION_PLAN.md's
+ * follow-up research): no LLM, no API call, just matching against data
+ * already on-device. Optional — extraction works the same without it, e.g.
+ * for a brand-new shop with no history yet. */
+export interface KnownVocab {
+  customers: string[];
+  items: string[];
+}
+
+// Only correct on an exact (case-insensitive) match or a single-edit typo —
+// same conservative bar as the ASR-mishearing fallback above, and for the
+// same reason: past a short word length, a 1-edit coincidental collision
+// with the wrong customer/item becomes a real risk, so short words are left
+// alone rather than guessed at.
+function correctToKnownVocab(value: string, known: string[]): string {
+  const lower = value.toLowerCase();
+  const exact = known.find((w) => w.toLowerCase() === lower);
+  if (exact) return exact;
+  if (lower.length < 4) return value;
+  const fuzzy = known.find((w) => w.length >= 4 && withinEditDistance1(lower, w.toLowerCase()));
+  return fuzzy ?? value;
+}
+
 /** Local, non-API replacement for extractFromTranscript/extractFromAudio.
  * Same output contract (ExtractionResultSchema) so nothing downstream
- * (ConfirmationCard, db.ts, displayItem) needs to know the difference. */
-export function extractLocally(transcript: string, lang: Lang): ExtractionResult {
+ * (ConfirmationCard, db.ts, displayItem) needs to know the difference.
+ * `knownVocab` is optional local-only vocabulary correction — see
+ * `KnownVocab` above. */
+export function extractLocally(transcript: string, lang: Lang, knownVocab?: KnownVocab): ExtractionResult {
   const trimmed = transcript.trim();
   if (!trimmed) {
     return {
@@ -463,16 +536,22 @@ export function extractLocally(transcript: string, lang: Lang): ExtractionResult
   const amount = extractAmount(trimmed, lang);
 
   const extracted =
-    lang === "bn" ? extractBn(trimmed) : lang === "ko" ? extractKo(trimmed) : extractEn(trimmed, type);
+    lang === "bn" ? extractBn(trimmed) : lang === "ko" ? extractKo(trimmed) : extractEn(trimmed, type, knownVocab);
 
-  const item = type === "repayment" ? null : extracted.item;
+  const customer =
+    extracted.customer && knownVocab?.customers.length
+      ? correctToKnownVocab(extracted.customer, knownVocab.customers)
+      : extracted.customer;
+
+  const rawItem = type === "repayment" ? null : extracted.item;
+  const item = rawItem && knownVocab?.items.length ? correctToKnownVocab(rawItem, knownVocab.items) : rawItem;
   const itemConfidence = type === "repayment" ? 0 : extracted.itemConfidence;
 
   // Never invent an amount — matches the rule the Gemini prompts used.
   if (amount == null) {
     return {
       type: "unclear",
-      customer: extracted.customer,
+      customer,
       item,
       item_translations: buildItemTranslations(item, lang),
       amount_taka: null,
@@ -483,7 +562,7 @@ export function extractLocally(transcript: string, lang: Lang): ExtractionResult
 
   return {
     type,
-    customer: extracted.customer,
+    customer,
     item,
     item_translations: buildItemTranslations(item, lang),
     amount_taka: amount,

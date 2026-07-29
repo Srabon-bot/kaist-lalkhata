@@ -139,18 +139,18 @@ export const dict = {
   // sales — plain language, no grammar jargon either way.
   "mic.structureHintSale": {
     bn: "বাকি/নগদ বিক্রি: নাম, তারপর কত টাকার কী",
-    // English extraction is verb-anchored, not word-order-anchored like
-    // bn/ko (no particles to mark "this is the name") — a bare "name,
-    // amount, item" utterance has no verb for it to lock onto, so the hint
-    // has to ask for an actual sentence instead of the bn/ko-style shorthand.
-    // "worth" rather than "for" — "for" sounds like "four" and can get
-    // misheard by speech recognition, silently dropping the item.
-    en: 'Say a full sentence, e.g. "Rohim bought biscuits worth 500 taka"',
+    // English now supports a bn/ko-style terse slot order too (see the
+    // "Terse slot format" branch of extractEn in localExtraction.ts): name,
+    // then item, then amount, "credit" only if it's a credit sale — no verb
+    // needed. A full verb sentence ("Rohim bought biscuits worth 500 taka")
+    // still works via the verb-anchored branches; this is just the faster
+    // alternative the hint leads with.
+    en: 'Name, item, amount — add "credit" if it\'s on credit, e.g. "Rohim biscuits 500 credit"',
     ko: "외상/현금 판매: 이름, 그다음 금액과 물건",
   },
   "mic.structureHintRepayment": {
     bn: "বাকি শোধ: শুধু নাম আর টাকা",
-    en: 'Say a full sentence, e.g. "Salma paid back 200 taka"',
+    en: 'Name, then "repaid", then amount, e.g. "Salma repaid 200"',
     ko: "외상 상환: 이름과 금액만",
   },
   "mic.requesting": { bn: "অনুমতি চাওয়া হচ্ছে...", en: "Requesting permission...", ko: "권한을 요청하는 중..." },

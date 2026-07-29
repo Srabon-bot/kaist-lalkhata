@@ -79,6 +79,12 @@ const ITEMS: { bn: string; en: string; ko: string }[] = [
   { bn: "ব্যাটারি", en: "battery", ko: "배터리" },
 ];
 
+/** Every dictionary word across all three languages, flattened — the
+ * baseline "known item vocabulary" for local ASR-noise correction
+ * (src/lib/localExtraction.ts's KnownVocab), independent of a shop's own
+ * transaction history (so a brand-new shop still benefits from it). */
+export const KNOWN_ITEM_WORDS: string[] = ITEMS.flatMap((item) => [item.bn, item.en, item.ko]);
+
 function normalize(word: string): string {
   return word.trim().toLowerCase();
 }

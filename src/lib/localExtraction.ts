@@ -19,12 +19,33 @@ import { translateItem } from "./itemDictionary";
 // app's own repayment sample sentences in all three languages.
 const REPAYMENT_TRIGGERS: Record<Lang, string[]> = {
   bn: ["শোধ", "জমা", "পরিশোধ"],
-  en: ["repaid", "paid back", "pay back", "paid off", "settled"],
+  // "repay" (prefix-matches repay/repays/repaying/repayment) alongside
+  // "repaid" separately since English "repay" is irregular — its past
+  // tense doesn't share "repay" as a prefix the way a regular verb would.
+  // Deliberately NOT bare "paid": extractEn's cash-sale verb-anchor list
+  // already treats "paid" as an ordinary cash-sale verb ("Karim paid 500
+  // taka for rice"), so adding it here would misclassify that as a
+  // repayment instead — covered via its actual repayment phrasings
+  // ("paid back"/"paid off"/...) rather than the bare word.
+  en: [
+    "repaid",
+    "repay",
+    "paid back",
+    "pay back",
+    "paying back",
+    "paid off",
+    "pays off",
+    "paying off",
+    "settle",
+    "clear",
+  ],
   ko: ["갚", "상환", "청산"], // verb stems (without conjugated endings) so "갚았어요"/"갚았습니다" etc. all match
 };
 const CREDIT_TRIGGERS: Record<Lang, string[]> = {
   bn: ["বাকি", "ধারে", "বকেয়া"],
-  en: ["credit", "due", "owe"],
+  // "lent" alongside "lend" for the same irregular-verb reason as
+  // repay/repaid above — "lend"'s past tense doesn't share its prefix.
+  en: ["credit", "due", "owe", "borrow", "lend", "lent"],
   ko: ["외상"],
 };
 
@@ -247,6 +268,15 @@ function captureRun(tokens: string[], startIdx: number, max = 3): string | null 
   return out.length ? out.join(" ") : null;
 }
 
+// Subject+verb shape ("Rahim bought/owes/borrowed 300 taka for oil") shared
+// by two places below: the item-boundary logic (worth/for) and the bare-
+// leading-name customer fallback. Kept as one list so they can't drift out
+// of sync with each other again.
+const EN_SALE_VERBS = ["bought", "purchased", "paid", "received", "gave", "sold"];
+function isEnSaleVerb(tok: string): boolean {
+  return EN_SALE_VERBS.includes(tok) || tok.startsWith("owe") || tok.startsWith("borrow");
+}
+
 function extractEn(
   text: string,
   type: ExtractionType,
@@ -283,9 +313,7 @@ function extractEn(
   const forIdx = lower.indexOf("for");
   const ofIdx = lower.indexOf("of");
   const amountIdx = lower.findIndex((t) => /\d/.test(t));
-  const verbAnchorIdx = lower.findIndex(
-    (t) => ["bought", "purchased", "paid", "received", "gave", "sold"].includes(t) || t.startsWith("owe"),
-  );
+  const verbAnchorIdx = lower.findIndex(isEnSaleVerb);
   if (worthIdx >= 0) {
     // "worth" unambiguously marks "ITEM worth AMOUNT" regardless of which
     // verb precedes it (sold/bought/purchased/received/...) — checked
@@ -327,9 +355,20 @@ function extractEn(
   }
 
   // Repayment: "Salma apa paid back ৳200 of her credit" — leading tokens
-  // before the trigger verb phrase are the customer.
+  // before the trigger verb phrase are the customer. Prefix match (not
+  // exact) on the trigger's first word, matching classify()'s own
+  // containsAny — otherwise an inflected trigger ("repays"/"repaying"/
+  // "settled"/"cleared") gets classified as a repayment correctly but this
+  // fallback can't find where the trigger word is, leaving customer null.
+  // Safe to prefix-match here since type === "repayment" already confirms
+  // classify() found a real trigger somewhere in the text.
   if (!customer && type === "repayment") {
-    const triggerIdx = lower.findIndex((t) => REPAYMENT_TRIGGERS.en.some((trig) => t === trig.split(" ")[0]));
+    const triggerIdx = lower.findIndex((t) =>
+      REPAYMENT_TRIGGERS.en.some((trig) => {
+        const first = trig.split(" ")[0];
+        return t === first || t.startsWith(first);
+      }),
+    );
     if (triggerIdx > 0) {
       customer = tokens.slice(0, triggerIdx).join(" ");
       customerConfidence = customer ? 0.6 : 0;
@@ -345,12 +384,11 @@ function extractEn(
   // would be garbage if included), so this only fires when one of these
   // specific verbs is found near the start.
   if (!customer) {
-    // "owe"/"owes"/"owed" included — "Rahim owes 300 taka for oil" is a
-    // completely ordinary way to state a credit sale, same subject+verb
-    // shape as the others here.
-    const verbIdx = lower.findIndex(
-      (t) => ["bought", "purchased", "paid", "received", "gave", "sold"].includes(t) || t.startsWith("owe"),
-    );
+    // "owe"/"owes"/"owed" and "borrow"/"borrowed"/"borrows" included —
+    // "Rahim owes 300 taka for oil" and "Rahim borrowed 300 taka for oil"
+    // are both completely ordinary ways to state a credit sale, same
+    // subject+verb shape as the others here.
+    const verbIdx = lower.findIndex(isEnSaleVerb);
     if (verbIdx > 0) {
       customer = trimLeadingFillers(tokens.slice(0, verbIdx), "en").join(" ") || null;
       customerConfidence = customer ? 0.5 : 0;

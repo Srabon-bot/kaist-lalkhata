@@ -40,6 +40,19 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+// Android's OS-level speech recognizer has no real continuous mode: Chrome
+// emulates `continuous: true` by silently restarting the native recognizer,
+// and on each restart it re-announces the whole session so far as a new
+// "final" result — producing runaway, ever-growing duplicated transcripts.
+// This is a long-standing, still-open Chromium bug (crbug 258985 /
+// issues.chromium.org/issues/40324711), not something fixable from
+// application code while `continuous: true` is in use. Desktop Chrome has no
+// such bug. See useSpeechRecognition's Android branch below for the
+// workaround: run single-shot sessions and restart them ourselves.
+function isAndroid(): boolean {
+  return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+}
+
 export interface UseSpeechRecognitionResult {
   status: RecognitionStatus;
   interimText: string;
@@ -73,6 +86,8 @@ export function useSpeechRecognition(
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const finalTranscriptRef = useRef("");
   const deniedRef = useRef(false);
+  const stoppingRef = useRef(false);
+  const lastErrorRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
   const startedAtRef = useRef(0);
 
@@ -82,10 +97,12 @@ export function useSpeechRecognition(
   }, []);
 
   const stop = useCallback(() => {
+    stoppingRef.current = true;
     recognitionRef.current?.stop();
   }, []);
 
   const cancel = useCallback(() => {
+    stoppingRef.current = true;
     const recognition = recognitionRef.current;
     if (recognition) {
       recognition.onresult = null;
@@ -110,59 +127,13 @@ export function useSpeechRecognition(
 
     setStatus("requesting");
     deniedRef.current = false;
+    stoppingRef.current = false;
     finalTranscriptRef.current = "";
+    const android = isAndroid();
 
-    const recognition = new Ctor();
-    recognition.lang = RECOGNITION_LOCALE[recognitionLang];
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onstart = () => {
-      setStatus("listening");
-      startedAtRef.current = Date.now();
-      setElapsedSeconds(0);
-      timerRef.current = window.setInterval(() => {
-        const secs = (Date.now() - startedAtRef.current) / 1000;
-        setElapsedSeconds(secs);
-        if (secs >= MAX_RECORDING_SECONDS) recognition.stop();
-      }, 100);
-    };
-
-    recognition.onresult = (event) => {
-      // Rebuild the final transcript from scratch on every event rather than
-      // appending via event.resultIndex. Android Chrome's continuous-mode
-      // recognizer periodically re-fires already-finalized results as "new"
-      // final results (resultIndex bookkeeping is unreliable there), so
-      // incremental `+=` appending double-counts phrases and the transcript
-      // repeats itself. Desktop Chrome doesn't have this bug, but rebuilding
-      // from index 0 each time is idempotent on both platforms.
-      let finalText = "";
-      let interim = "";
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalText += result[0].transcript;
-        } else {
-          interim += result[0].transcript;
-        }
-      }
-      finalTranscriptRef.current = finalText;
-      setInterimText(interim);
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        deniedRef.current = true;
-        setStatus("denied");
-      }
-      // Other errors (no-speech, aborted, network) resolve via onend below.
-    };
-
-    recognition.onend = () => {
+    const finishUp = () => {
       clearTimer();
       recognitionRef.current = null;
-      if (deniedRef.current) return;
-
       const finished = finalTranscriptRef.current.trim();
       setStatus("idle");
       setInterimText("");
@@ -170,12 +141,108 @@ export function useSpeechRecognition(
       if (finished) onFinished(finished);
     };
 
-    recognitionRef.current = recognition;
-    try {
-      recognition.start();
-    } catch {
-      setStatus("denied");
-    }
+    const runSession = (isRestart: boolean) => {
+      const recognition = new Ctor();
+      recognition.lang = RECOGNITION_LOCALE[recognitionLang];
+      // Android: single-shot session, manually restarted on `onend` (see
+      // isAndroid() above for why). Desktop: real continuous mode works.
+      recognition.continuous = !android;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        lastErrorRef.current = null;
+        setStatus("listening");
+        // Keep the elapsed-time timer running across Android's session
+        // restarts instead of resetting it per-session.
+        if (timerRef.current === null) {
+          startedAtRef.current = Date.now();
+          setElapsedSeconds(0);
+          timerRef.current = window.setInterval(() => {
+            const secs = (Date.now() - startedAtRef.current) / 1000;
+            setElapsedSeconds(secs);
+            if (secs >= MAX_RECORDING_SECONDS) {
+              stoppingRef.current = true;
+              recognition.stop();
+            }
+          }, 100);
+        }
+      };
+
+      recognition.onresult = (event) => {
+        let sessionFinal = "";
+        let interim = "";
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            sessionFinal += result[0].transcript;
+          } else {
+            interim += result[0].transcript;
+          }
+        }
+        if (android) {
+          // Each single-shot session's results are self-contained, so we
+          // own accumulation across sessions instead of trusting Chrome's
+          // (broken, on Android) continuous-mode result buffer.
+          const trimmed = sessionFinal.trim();
+          if (trimmed) {
+            finalTranscriptRef.current = finalTranscriptRef.current
+              ? `${finalTranscriptRef.current} ${trimmed}`
+              : trimmed;
+          }
+        } else {
+          // Rebuild from index 0 every event rather than appending via
+          // event.resultIndex, so a spurious replayed final can't double up.
+          finalTranscriptRef.current = sessionFinal;
+        }
+        setInterimText(interim);
+      };
+
+      recognition.onerror = (event) => {
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          deniedRef.current = true;
+          stoppingRef.current = true;
+          setStatus("denied");
+          return;
+        }
+        lastErrorRef.current = event.error;
+        // Other errors (no-speech, aborted, network) resolve via onend below.
+      };
+
+      recognition.onend = () => {
+        recognitionRef.current = null;
+        if (deniedRef.current) {
+          clearTimer();
+          return;
+        }
+        // A persistent hardware/connectivity error (as opposed to the
+        // expected "no-speech" pause) shouldn't retry forever — Android's
+        // restart-on-end loop would otherwise beep and retry indefinitely.
+        const hardFailure = lastErrorRef.current === "audio-capture" || lastErrorRef.current === "network";
+        if (!android || stoppingRef.current || hardFailure) {
+          finishUp();
+          return;
+        }
+        // Android ends each single-shot session after a short pause;
+        // immediately start the next one so listening feels continuous.
+        runSession(true);
+      };
+
+      recognitionRef.current = recognition;
+      try {
+        recognition.start();
+      } catch {
+        if (isRestart) {
+          // The native recognizer sometimes isn't fully released yet right
+          // after the previous session ended; retry shortly instead of
+          // surfacing a spurious "denied" state to the user.
+          window.setTimeout(() => runSession(true), 250);
+        } else {
+          setStatus("denied");
+        }
+      }
+    };
+
+    runSession(false);
   }, [clearTimer, onFinished, recognitionLang]);
 
   useEffect(
